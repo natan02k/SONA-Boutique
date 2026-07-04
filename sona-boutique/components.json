@@ -1,0 +1,12 @@
+{
+  "$schema": "https://ui.shadcn.com/schema.json",
+  "style": "new-york",
+  "root": "./",
+  "rsc": true,
+  "icons": {
+    "tsx": "lucide-react"
+  },
+  "alias": {
+    "@/*": "./src/*"
+  }
+}
