@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useState, use } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { LuxuryButton } from "@/components/luxury/LuxuryButton";
 import { ImageUploader } from "@/components/admin/ImageUploader";
-import { ArrowLeft, Save } from "lucide-react";
+import { ArrowLeft, Save, CheckCircle2 } from "lucide-react";
 
 type Brand = { id: string; name: string };
 type Category = { id: string; name: string };
@@ -18,6 +18,8 @@ type PageProps = {
 export default function AdminEditProductPage({ params }: PageProps) {
   const { id } = use(params);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const isNewProduct = searchParams.get("new") === "1";
 
   const [brands, setBrands] = useState<Brand[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -220,6 +222,21 @@ export default function AdminEditProductPage({ params }: PageProps) {
       {errorMsg && (
         <div className="border border-[#B91C1C]/30 bg-[#B91C1C]/10 p-4 text-xs text-[#B91C1C]">
           {errorMsg}
+        </div>
+      )}
+
+      {isNewProduct && (
+        <div className="flex items-start gap-3 border border-emerald-200 bg-emerald-50 p-4">
+          <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0 text-emerald-600" />
+          <div>
+            <p className="font-mono text-[11px] font-semibold text-emerald-800">
+              Produkt erfolgreich angelegt!
+            </p>
+            <p className="mt-0.5 font-mono text-[10px] text-emerald-700">
+              Laden Sie jetzt Produktfotos hoch — scrollen Sie zu Abschnitt 4 „Produktbilder
+              Galerie" und ziehen Sie Bilder per Drag & Drop in den Upload-Bereich.
+            </p>
+          </div>
         </div>
       )}
 

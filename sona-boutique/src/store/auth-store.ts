@@ -14,7 +14,7 @@ type AuthState = {
   customer: Customer | null;
   loading: boolean;
   error: string | null;
-  fetchMe: () => Promise<void>;
+  fetchMe: () => Promise<Customer | null>;
   login: (email: string, password: string) => Promise<Customer>;
   register: (data: {
     email: string;
@@ -38,12 +38,14 @@ export const useAuthStore = create<AuthState>((set) => ({
       const res = await fetch("/api/auth/me");
       if (!res.ok) {
         set({ customer: null, loading: false });
-        return;
+        return null;
       }
       const data = await res.json();
       set({ customer: data.customer, loading: false });
+      return data.customer as Customer;
     } catch {
       set({ customer: null, loading: false, error: "Verbindungsfehler" });
+      return null;
     }
   },
 

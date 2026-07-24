@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { LuxuryButton } from "@/components/luxury/LuxuryButton";
-import { ArrowLeft, Save, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, Save, ImageIcon } from "lucide-react";
 
 type Brand = { id: string; name: string };
 type Category = { id: string; name: string };
@@ -49,10 +49,6 @@ export default function AdminNewProductPage() {
     tags: "",
     isFeatured: false,
     featuredRank: 0,
-
-    imageUrls: [
-      "https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=1000&auto=format&fit=crop",
-    ],
   });
 
   useEffect(() => {
@@ -89,22 +85,6 @@ export default function AdminNewProductPage() {
     }
   };
 
-  const handleImageUrlChange = (index: number, value: string) => {
-    const updated = [...formData.imageUrls];
-    updated[index] = value;
-    setFormData((prev) => ({ ...prev, imageUrls: updated }));
-  };
-
-  const addImageUrl = () => {
-    setFormData((prev) => ({ ...prev, imageUrls: [...prev.imageUrls, ""] }));
-  };
-
-  const removeImageUrl = (index: number) => {
-    setFormData((prev) => ({
-      ...prev,
-      imageUrls: prev.imageUrls.filter((_, i) => i !== index),
-    }));
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -126,7 +106,7 @@ export default function AdminNewProductPage() {
         retailPriceCents: formData.retailPriceEuro
           ? Math.round(parseFloat(formData.retailPriceEuro) * 100)
           : null,
-        imageUrls: formData.imageUrls.filter((url) => url.trim().length > 0),
+        imageUrls: [],
       };
 
       const res = await fetch("/api/admin/products", {
@@ -140,7 +120,8 @@ export default function AdminNewProductPage() {
         throw new Error(data.error || "Fehler beim Erstellen des Produkts.");
       }
 
-      router.push("/admin/products");
+      // Redirect to edit page where ImageUploader is available
+      router.push(`/admin/products/${data.product.id}?new=1`);
     } catch (err: any) {
       setErrorMsg(err.message || "Ein Unerwarteter Fehler ist aufgetreten.");
       setSubmitting(false);
@@ -454,40 +435,20 @@ export default function AdminNewProductPage() {
           </div>
         </section>
 
-        {/* Section 5: Bilder URLs */}
-        <section className="space-y-4 border border-[#E8E5DC] bg-white p-6">
-          <div className="flex items-center justify-between border-b border-[#E8E5DC] pb-3">
-            <h3 className="font-serif text-lg text-[#1A1A1A]">5. Produktbilder (URLs)</h3>
-            <button
-              type="button"
-              onClick={addImageUrl}
-              className="flex items-center gap-1 font-mono text-[10px] text-[#C5A880] uppercase hover:underline"
-            >
-              <Plus className="h-3.5 w-3.5" /> Bild hinzufügen
-            </button>
-          </div>
-
-          <div className="space-y-3">
-            {formData.imageUrls.map((url, idx) => (
-              <div key={idx} className="flex items-center gap-2">
-                <input
-                  type="url"
-                  placeholder="https://..."
-                  value={url}
-                  onChange={(e) => handleImageUrlChange(idx, e.target.value)}
-                  className="flex-1 border border-[#E8E5DC] bg-[#FAF9F6] px-3 py-2 text-xs text-[#1A1A1A] focus:border-[#C5A880] focus:outline-none"
-                />
-                {formData.imageUrls.length > 1 && (
-                  <button
-                    type="button"
-                    onClick={() => removeImageUrl(idx)}
-                    className="p-2 text-[#6B6B6B] hover:text-[#B91C1C]"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                )}
-              </div>
-            ))}
+        {/* Section 5: Bilder – Hinweis */}
+        <section className="space-y-3 border border-[#C5A880]/30 bg-[#C5A880]/5 p-6">
+          <div className="flex items-start gap-3">
+            <ImageIcon className="mt-0.5 h-5 w-5 flex-shrink-0 text-[#C5A880]" />
+            <div>
+              <h3 className="font-serif text-base text-[#1A1A1A]">5. Produktbilder</h3>
+              <p className="mt-1 font-mono text-[10px] leading-relaxed text-[#6B6B6B]">
+                Nach dem Anlegen des Produkts werden Sie automatisch zur Bearbeitungsseite
+                weitergeleitet, wo Sie Bilder per{" "}
+                <strong className="text-[#1A1A1A]">Drag &amp; Drop</strong> direkt von Ihrem
+                Computer hochladen können. Die Bilder werden automatisch bei Cloudinary
+                gespeichert und optimiert.
+              </p>
+            </div>
           </div>
         </section>
 
@@ -495,7 +456,7 @@ export default function AdminNewProductPage() {
         <div className="flex justify-end pt-4">
           <LuxuryButton type="submit" disabled={submitting} variant="gold" size="lg" shimmer>
             <Save className="mr-2 h-4 w-4" />
-            {submitting ? "Wird gespeichert..." : "Produkt Anlegen"}
+            {submitting ? "Wird angelegt..." : "Produkt Anlegen & Bilder Hochladen →"}
           </LuxuryButton>
         </div>
       </form>
