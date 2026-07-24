@@ -2,7 +2,7 @@ import { ReactNode } from "react";
 
 type LuxuryBadgeProps = {
   children: ReactNode;
-  variant?: "default" | "gold" | "green" | "stone";
+  variant?: "default" | "gold" | "green" | "stone" | "red" | "dark";
   className?: string;
 };
 
@@ -15,6 +15,10 @@ export function LuxuryBadge({ children, variant = "default", className = "" }: L
         return "bg-emerald-50 text-emerald-800 border-emerald-200";
       case "stone":
         return "bg-[#F5F4EE] text-[#6B6B6B] border-[#E8E5DC]";
+      case "red":
+        return "bg-rose-50 text-rose-800 border-rose-200";
+      case "dark":
+        return "bg-[#1A1A1A] text-[#FAF9F6] border-[#1A1A1A]";
       case "default":
       default:
         return "bg-[#1A1A1A] text-[#FAF9F6] border-[#1A1A1A]";
