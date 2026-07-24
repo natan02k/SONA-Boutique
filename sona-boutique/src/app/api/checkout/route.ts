@@ -5,6 +5,7 @@ import { getCurrentCustomer } from "@/lib/auth";
 import { checkoutSchema } from "@/lib/validators/checkout";
 import { stripe } from "@/lib/stripe";
 import { getTaxRate } from "@/lib/tax";
+import { lockCartItems } from "@/lib/inventory-lock";
 import { cookies } from "next/headers";
 
 export async function POST(request: NextRequest) {
@@ -33,6 +34,17 @@ export async function POST(request: NextRequest) {
     const recomputedCart = await recomputeCart(cart.id, data.shippingCountry);
     if (!recomputedCart || recomputedCart.items.length === 0) {
       return NextResponse.json({ error: "Warenkorb ist leer." }, { status: 400 });
+    }
+
+    // Acquire 15-minute inventory lock for items in cart
+    const lockResult = await lockCartItems(cart.id);
+    if (!lockResult.success) {
+      return NextResponse.json(
+        {
+          error: `Das exklusive Einzelstück "${lockResult.failedProductTitle || "Artikel"}" ist derzeit von einem anderen Kunden in der Kasse reserviert.`,
+        },
+        { status: 409 },
+      );
     }
 
     const customer = await getCurrentCustomer();

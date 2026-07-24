@@ -6,11 +6,11 @@ export type TaxInfo = {
 
 export const TAX_RATES: Record<string, TaxInfo> = {
   DE: { rate: 0.19, name: "Deutschland (19%)", isEU: true },
-  AT: { rate: 0.20, name: "Österreich (20%)", isEU: true },
-  FR: { rate: 0.20, name: "Frankreich (20%)", isEU: true },
+  AT: { rate: 0.2, name: "Österreich (20%)", isEU: true },
+  FR: { rate: 0.2, name: "Frankreich (20%)", isEU: true },
   IT: { rate: 0.22, name: "Italien (22%)", isEU: true },
   NL: { rate: 0.21, name: "Niederlande (21%)", isEU: true },
-  CH: { rate: 0.00, name: "Schweiz (0% — MwSt. wird beim Zoll erhoben)", isEU: false },
+  CH: { rate: 0.0, name: "Schweiz (0% — MwSt. wird beim Zoll erhoben)", isEU: false },
 };
 
 /**
