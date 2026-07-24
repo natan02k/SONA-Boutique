@@ -4,6 +4,7 @@ import { getOrCreateCart, recomputeCart, CART_COOKIE } from "@/lib/cart";
 import { getCurrentCustomer } from "@/lib/auth";
 import { checkoutSchema } from "@/lib/validators/checkout";
 import { stripe } from "@/lib/stripe";
+import { getTaxRate } from "@/lib/tax";
 import { cookies } from "next/headers";
 
 export async function POST(request: NextRequest) {
@@ -29,7 +30,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Ihr Warenkorb ist leer." }, { status: 400 });
     }
 
-    const recomputedCart = await recomputeCart(cart.id);
+    const recomputedCart = await recomputeCart(cart.id, data.shippingCountry);
     if (!recomputedCart || recomputedCart.items.length === 0) {
       return NextResponse.json({ error: "Warenkorb ist leer." }, { status: 400 });
     }
@@ -102,6 +103,7 @@ export async function POST(request: NextRequest) {
           subtotalCents: recomputedCart.subtotalCents,
           shippingCents: recomputedCart.shippingCents,
           taxCents: recomputedCart.taxCents,
+          taxRate: getTaxRate(data.shippingCountry),
           discountCents: recomputedCart.discountCents,
           totalCents: recomputedCart.totalCents,
           currencyCode: "EUR",

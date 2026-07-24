@@ -1,15 +1,16 @@
 import { cookies } from "next/headers";
 import { db } from "@/lib/db";
 import { getCurrentCustomer } from "@/lib/auth";
+import { getTaxRate } from "@/lib/tax";
 
 export const CART_COOKIE = "sona_cart";
 const CART_TTL_DAYS = 30;
 
 /**
  * Recomputes Subtotal, Promo Discount, Shipping, Tax, and Total on the Server.
- * Server-side Source of Truth (Client cannot manipulate prices!).
+ * Dynamically applies EU-OSS tax rates depending on destination shipping country.
  */
-export async function recomputeCart(cartId: string) {
+export async function recomputeCart(cartId: string, shippingCountry: string = "DE") {
   const cart = await db.cart.findUnique({
     where: { id: cartId },
     include: {
@@ -26,11 +27,9 @@ export async function recomputeCart(cartId: string) {
   // 1. Subtotal: Sum of (unitPriceCents * quantity)
   let subtotal = 0;
   for (const item of cart.items) {
-    // Sync price from DB product to prevent stale prices
     const itemSubtotal = item.product.resalePriceCents * item.quantity;
     subtotal += itemSubtotal;
 
-    // Update item unitPriceCents if it changed
     if (item.unitPriceCents !== item.product.resalePriceCents) {
       await db.cartItem.update({
         where: { id: item.id },
@@ -62,7 +61,6 @@ export async function recomputeCart(cartId: string) {
         discount = Math.min(promo.value, subtotal);
       }
     } else {
-      // Promo no longer valid, remove code
       await db.cart.update({
         where: { id: cartId },
         data: { promoCode: null },
@@ -70,12 +68,13 @@ export async function recomputeCart(cartId: string) {
     }
   }
 
-  // 3. Shipping: Free if subtotal >= 500€ (50000 cents), else 15€ (1500 cents)
+  // 3. Shipping: Free if subtotal >= 500€ (50000 cents), else 15€ (1500 cents) for international
   const shipping = subtotal === 0 || subtotal >= 50000 ? 0 : 1500;
 
-  // 4. Taxable amount & Tax: 19% MwSt.
+  // 4. Dynamic EU-OSS Tax Rate calculation
+  const taxRate = getTaxRate(shippingCountry);
   const taxable = Math.max(0, subtotal - discount) + shipping;
-  const tax = Math.floor(taxable * 0.19);
+  const tax = Math.floor(taxable * taxRate);
 
   // 5. Total
   const total = taxable + tax;
@@ -113,14 +112,12 @@ export async function getOrCreateCart() {
   const cartCookieId = store.get(CART_COOKIE)?.value;
   const customer = await getCurrentCustomer();
 
-  // If customer logged in, look for their active cart
   if (customer) {
     let customerCart = await db.cart.findFirst({
       where: { customerId: customer.id, status: "ACTIVE" },
     });
 
     if (customerCart) {
-      // If anonymous cart cookie exists, merge it into customer cart
       if (cartCookieId && cartCookieId !== customerCart.id) {
         await mergeAnonymousCartToCustomerCart(cartCookieId, customer.id);
       }
@@ -128,7 +125,6 @@ export async function getOrCreateCart() {
       return recomputeCart(customerCart.id);
     }
 
-    // Customer has no cart, but guest cart cookie exists -> assign to customer
     if (cartCookieId) {
       const guestCart = await db.cart.findUnique({ where: { id: cartCookieId } });
       if (guestCart && guestCart.status === "ACTIVE") {
@@ -141,7 +137,6 @@ export async function getOrCreateCart() {
       }
     }
 
-    // Create new cart for customer
     customerCart = await db.cart.create({
       data: { customerId: customer.id, status: "ACTIVE" },
     });
@@ -149,7 +144,6 @@ export async function getOrCreateCart() {
     return recomputeCart(customerCart.id);
   }
 
-  // Anonymous Guest Flow
   if (cartCookieId) {
     const existingCart = await db.cart.findUnique({ where: { id: cartCookieId } });
     if (existingCart && existingCart.status === "ACTIVE") {
@@ -157,7 +151,6 @@ export async function getOrCreateCart() {
     }
   }
 
-  // Create new anonymous cart
   const newCart = await db.cart.create({
     data: { status: "ACTIVE" },
   });
@@ -165,9 +158,6 @@ export async function getOrCreateCart() {
   return recomputeCart(newCart.id);
 }
 
-/**
- * Sets the sona_cart cookie on the response.
- */
 export async function setCartCookie(cartId: string) {
   const store = await cookies();
   const expiresAt = new Date(Date.now() + CART_TTL_DAYS * 86400 * 1000);
@@ -180,9 +170,6 @@ export async function setCartCookie(cartId: string) {
   });
 }
 
-/**
- * Merges anonymous guest cart into logged-in customer cart.
- */
 export async function mergeAnonymousCartToCustomerCart(
   anonymousCartId: string,
   customerId: string,
@@ -202,7 +189,6 @@ export async function mergeAnonymousCartToCustomerCart(
   });
 
   if (!customerCart) {
-    // Simply transfer anonymous cart to customer
     await db.cart.update({
       where: { id: anonymousCartId },
       data: { customerId },
@@ -210,7 +196,6 @@ export async function mergeAnonymousCartToCustomerCart(
     return;
   }
 
-  // Merge items
   for (const anonItem of anonymousCart.items) {
     const existingItem = customerCart.items.find((it) => it.productId === anonItem.productId);
     const maxInventory = anonItem.product.inventoryQuantity;
@@ -233,7 +218,6 @@ export async function mergeAnonymousCartToCustomerCart(
     }
   }
 
-  // Mark anonymous cart as merged
   await db.cart.update({
     where: { id: anonymousCartId },
     data: { status: "MERGED" },

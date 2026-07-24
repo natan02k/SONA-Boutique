@@ -8,6 +8,7 @@ import { useAuthStore } from "@/store/auth-store";
 import { ShimmerImage } from "@/components/luxury/ShimmerImage";
 import { PriceTag } from "@/components/luxury/PriceTag";
 import { LuxuryButton } from "@/components/luxury/LuxuryButton";
+import { getTaxInfo } from "@/lib/tax";
 import { ShieldCheck, Truck, Lock, CreditCard, AlertCircle, ArrowLeft, Check } from "lucide-react";
 
 export default function CheckoutPage() {
@@ -466,11 +467,12 @@ export default function CheckoutPage() {
                 </div>
               </dl>
 
-              {/* PAngV / §312j BGB Legal Notice */}
+              {/* PAngV / EU-OSS Legal Notice */}
               <div className="space-y-3 pt-2">
                 <p className="font-mono text-[10px] text-[#6B6B6B]">
-                  Inkl. 19% MwSt. (
-                  {(tax / 100).toLocaleString("de-DE", { style: "currency", currency: "EUR" })})
+                  {formData.shippingCountry === "CH"
+                    ? "MwSt. wird beim Import durch den Schweizer Zoll erhoben (0% Ausfuhr-MwSt.)."
+                    : `Inkl. ${getTaxInfo(formData.shippingCountry).name} (${(tax / 100).toLocaleString("de-DE", { style: "currency", currency: "EUR" })})`}
                 </p>
 
                 {/* §312j BGB Compliant Button Label */}
