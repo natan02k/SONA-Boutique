@@ -1,26 +1,39 @@
 import { NextRequest } from "next/server";
 
 /**
- * Performs a basic CSRF check by verifying the Origin/Referer header
- * against the allowed application URL.
- * SameSite=Strict cookies already provide significant CSRF protection,
- * this is an additional defense-in-depth layer for critical POST routes.
- *
- * @param req - The incoming NextRequest.
- * @returns true if the request passes the CSRF check.
+ * Validates request Origin and Referer headers against CSRF attacks.
  */
 export function checkCsrf(req: NextRequest): boolean {
+  // Safe HTTP Methods bypass CSRF checks
   if (req.method === "GET" || req.method === "HEAD" || req.method === "OPTIONS") {
     return true;
   }
 
-  const origin = req.headers.get("origin") || req.headers.get("referer");
-  if (!origin) {
-    // Allow requests without origin for server-side calls (webhooks, cron)
+  const path = req.nextUrl.pathname;
+
+  // Stripe Webhooks come from external Stripe servers with raw signature verification
+  if (path.startsWith("/api/webhooks/stripe")) {
     return true;
   }
 
-  const allowedOrigins = [process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"];
+  const originHeader = req.headers.get("origin");
+  const refererHeader = req.headers.get("referer");
 
-  return allowedOrigins.some((allowed) => origin?.startsWith(allowed));
+  const targetOrigin = originHeader || (refererHeader ? new URL(refererHeader).origin : null);
+  if (!targetOrigin) {
+    // If no origin or referer provided on mutating request, reject
+    return false;
+  }
+
+  const requestOrigin = req.nextUrl.origin;
+  const configuredAppUrl = process.env.NEXT_PUBLIC_APP_URL
+    ? new URL(process.env.NEXT_PUBLIC_APP_URL).origin
+    : null;
+
+  const allowedOrigins = [requestOrigin];
+  if (configuredAppUrl) {
+    allowedOrigins.push(configuredAppUrl);
+  }
+
+  return allowedOrigins.some((allowed) => targetOrigin.startsWith(allowed));
 }
