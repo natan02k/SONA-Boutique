@@ -19,7 +19,7 @@ export default function HomePage() {
 
   const sampleProducts = [
     {
-      id: "1",
+      id: "hermes-birkin-30-gold",
       title: "Birkin 30 Gold Togo",
       brand: "Hermès",
       condition: "PRISTINE",
@@ -30,7 +30,7 @@ export default function HomePage() {
       tag: "Must-Have",
     },
     {
-      id: "2",
+      id: "chanel-flap-medium-black",
       title: "Classic Medium Flap Bag",
       brand: "Chanel",
       condition: "EXCELLENT",
@@ -41,7 +41,7 @@ export default function HomePage() {
       tag: "Iconic",
     },
     {
-      id: "3",
+      id: "lv-speedy-25-monogram",
       title: "Speedy Bandoulière 25",
       brand: "Louis Vuitton",
       condition: "VERY_GOOD",
@@ -52,7 +52,7 @@ export default function HomePage() {
       tag: "Bestseller",
     },
     {
-      id: "4",
+      id: "dior-saddle-blue",
       title: "Lady Dior Medium Cannage",
       brand: "Dior",
       condition: "PRISTINE",
@@ -63,16 +63,13 @@ export default function HomePage() {
     },
   ];
 
-  const handleAddToCart = (product: (typeof sampleProducts)[0]) => {
-    addItem({
-      productId: product.id,
-      title: product.title,
-      brandName: product.brand,
-      priceCents: product.priceCents,
-      imageUrl: product.imageUrl,
-      condition: product.condition,
-    });
-    openCartDrawer();
+  const handleAddToCart = async (product: (typeof sampleProducts)[0]) => {
+    try {
+      await addItem(product.id, 1);
+      openCartDrawer();
+    } catch {
+      // Error in store
+    }
   };
 
   return (

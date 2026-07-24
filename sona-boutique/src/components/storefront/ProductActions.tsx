@@ -27,32 +27,24 @@ export function ProductActions({ product }: ProductActionsProps) {
 
   const isSoldOut = product.inventoryQuantity <= 0;
 
-  const handleAddToCart = () => {
+  const handleAddToCart = async () => {
     if (isSoldOut) return;
-    addItem({
-      productId: product.id,
-      title: product.title,
-      brandName: product.brandName,
-      priceCents: product.priceCents,
-      imageUrl: product.imageUrl,
-      condition: product.condition,
-      quantity,
-    });
-    openCartDrawer();
+    try {
+      await addItem(product.id, quantity);
+      openCartDrawer();
+    } catch {
+      // Error handled in store
+    }
   };
 
-  const handleBuyNow = () => {
+  const handleBuyNow = async () => {
     if (isSoldOut) return;
-    addItem({
-      productId: product.id,
-      title: product.title,
-      brandName: product.brandName,
-      priceCents: product.priceCents,
-      imageUrl: product.imageUrl,
-      condition: product.condition,
-      quantity,
-    });
-    router.push("/checkout");
+    try {
+      await addItem(product.id, quantity);
+      router.push("/checkout");
+    } catch {
+      // Error handled in store
+    }
   };
 
   if (isSoldOut) {
@@ -90,7 +82,9 @@ export function ProductActions({ product }: ProductActionsProps) {
             +
           </button>
         </div>
-        <span className="font-mono text-[10px] text-[#6B6B6B]">(Nur 1x verfügbar)</span>
+        <span className="font-mono text-[10px] text-[#6B6B6B]">
+          (Nur {product.inventoryQuantity}x verfügbar)
+        </span>
       </div>
 
       {/* Buttons */}

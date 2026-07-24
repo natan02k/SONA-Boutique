@@ -4,6 +4,8 @@ import { verifyPassword, createSession, setSessionCookie } from "@/lib/auth";
 import { loginSchema } from "@/lib/validators/auth";
 import { checkRateLimit } from "@/lib/rate-limit";
 
+import { CART_COOKIE, mergeAnonymousCartToCustomerCart } from "@/lib/cart";
+
 export async function POST(request: NextRequest) {
   try {
     // Rate limiting: 5 requests per 15 minutes per IP
@@ -44,6 +46,12 @@ export async function POST(request: NextRequest) {
       request.headers.get("user-agent") || undefined,
     );
     await setSessionCookie(token, expiresAt);
+
+    // Merge anonymous cart if guest cart cookie exists
+    const cartCookie = request.cookies.get(CART_COOKIE)?.value;
+    if (cartCookie) {
+      await mergeAnonymousCartToCustomerCart(cartCookie, customer.id);
+    }
 
     // Update lastLoginAt
     await db.customer.update({

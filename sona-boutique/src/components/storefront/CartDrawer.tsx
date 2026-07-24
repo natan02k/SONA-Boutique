@@ -9,17 +9,21 @@ import { ShimmerImage } from "@/components/luxury/ShimmerImage";
 import { PriceTag } from "@/components/luxury/PriceTag";
 import { LuxuryButton } from "@/components/luxury/LuxuryButton";
 import { ConditionBadge } from "@/components/luxury/ConditionBadge";
-import { X, Trash2, ShoppingBag, ArrowRight } from "lucide-react";
+import { X, Trash2, ShoppingBag, ArrowRight, Tag } from "lucide-react";
 import { EASE_LUXURY } from "@/lib/motion-presets";
 
 export function CartDrawer() {
   const { isCartDrawerOpen, closeCartDrawer } = useUIStore();
-  const { items, removeItem, updateQuantity, getSubtotalCents } = useCartStore();
+  const { cart, fetchCart, updateItem, removeItem, applyPromo, removePromo, error, clearError } =
+    useCartStore();
   const [mounted, setMounted] = useState(false);
+  const [promoCodeInput, setPromoCodeInput] = useState("");
+  const [promoLoading, setPromoLoading] = useState(false);
 
   useEffect(() => {
     setMounted(true);
-  }, []);
+    fetchCart();
+  }, [fetchCart]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -31,8 +35,25 @@ export function CartDrawer() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isCartDrawerOpen, closeCartDrawer]);
 
-  const subtotal = mounted ? getSubtotalCents() : 0;
-  const cartItems = mounted ? items : [];
+  const cartItems = mounted ? cart?.items || [] : [];
+  const subtotal = cart?.subtotalCents || 0;
+  const shipping = cart?.shippingCents || 0;
+  const discount = cart?.discountCents || 0;
+  const total = cart?.totalCents || 0;
+
+  const handleApplyPromo = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!promoCodeInput.trim()) return;
+    try {
+      setPromoLoading(true);
+      await applyPromo(promoCodeInput.trim());
+      setPromoCodeInput("");
+    } catch {
+      // Error handled by store
+    } finally {
+      setPromoLoading(false);
+    }
+  };
 
   return (
     <AnimatePresence>
@@ -57,11 +78,11 @@ export function CartDrawer() {
           >
             {/* Header */}
             <div>
-              <div className="mb-6 flex items-center justify-between border-b border-[#E8E5DC] pb-4">
+              <div className="mb-4 flex items-center justify-between border-b border-[#E8E5DC] pb-4">
                 <div className="flex items-center gap-3">
                   <ShoppingBag className="h-5 w-5 text-[#C5A880]" />
                   <h3 className="font-serif text-xl tracking-tight text-[#1A1A1A]">
-                    Warenkorb ({cartItems.length})
+                    Warenkorb ({cartItems.reduce((acc, item) => acc + item.quantity, 0)})
                   </h3>
                 </div>
                 <button
@@ -72,6 +93,16 @@ export function CartDrawer() {
                   <X className="h-5 w-5" />
                 </button>
               </div>
+
+              {/* Error Notice */}
+              {error && (
+                <div className="mb-4 flex items-center justify-between border border-[#B91C1C]/30 bg-[#B91C1C]/10 p-2.5 text-xs text-[#B91C1C]">
+                  <span>{error}</span>
+                  <button onClick={clearError} className="p-1 hover:opacity-80">
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              )}
 
               {/* Items List */}
               {cartItems.length === 0 ? (
@@ -92,72 +123,140 @@ export function CartDrawer() {
                   </div>
                 </div>
               ) : (
-                <div className="max-h-[60vh] space-y-6 overflow-y-auto pr-2">
-                  {cartItems.map((item) => (
-                    <div
-                      key={item.productId}
-                      className="flex items-center justify-between gap-4 border-b border-[#E8E5DC] pb-4"
-                    >
-                      <div className="relative h-20 w-20 flex-shrink-0 border border-[#E8E5DC] bg-[#F5F4EE]">
-                        <ShimmerImage
-                          src={item.imageUrl}
-                          alt={item.title}
-                          fill
-                          sizes="80px"
-                          className="object-cover"
-                        />
-                      </div>
+                <div className="max-h-[50vh] space-y-4 overflow-y-auto pr-2">
+                  {cartItems.map((item) => {
+                    const primaryImage =
+                      item.product.images[0]?.url ||
+                      "https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=1000&auto=format&fit=crop";
 
-                      <div className="min-w-0 flex-1 space-y-1">
-                        <span className="label-luxury block text-[9px]">{item.brandName}</span>
-                        <h4 className="truncate font-serif text-sm font-medium text-[#1A1A1A]">
-                          {item.title}
-                        </h4>
-                        <ConditionBadge condition={item.condition} />
+                    return (
+                      <div
+                        key={item.id}
+                        className="flex items-center justify-between gap-4 border-b border-[#E8E5DC] pb-4"
+                      >
+                        <div className="relative h-16 w-16 flex-shrink-0 border border-[#E8E5DC] bg-[#F5F4EE]">
+                          <ShimmerImage
+                            src={primaryImage}
+                            alt={item.product.title}
+                            fill
+                            sizes="64px"
+                            className="object-cover"
+                          />
+                        </div>
 
-                        <div className="flex items-center gap-3 pt-1">
-                          <PriceTag resalePriceCents={item.priceCents} size="sm" />
-                          <div className="flex items-center border border-[#E8E5DC] text-xs">
-                            <button
-                              onClick={() => updateQuantity(item.productId, item.quantity - 1)}
-                              className="px-2 py-0.5 hover:bg-[#F5F4EE]"
-                            >
-                              -
-                            </button>
-                            <span className="px-2 py-0.5 font-mono">{item.quantity}</span>
-                            <button
-                              onClick={() => updateQuantity(item.productId, item.quantity + 1)}
-                              className="px-2 py-0.5 hover:bg-[#F5F4EE]"
-                            >
-                              +
-                            </button>
+                        <div className="min-w-0 flex-1 space-y-1">
+                          <span className="label-luxury block text-[9px]">
+                            {item.product.brand?.name || "Luxusmarke"}
+                          </span>
+                          <h4 className="truncate font-serif text-sm font-medium text-[#1A1A1A]">
+                            {item.product.title}
+                          </h4>
+                          <ConditionBadge condition={item.product.condition} />
+
+                          <div className="flex items-center gap-3 pt-1">
+                            <PriceTag resalePriceCents={item.unitPriceCents} size="sm" />
+                            <div className="flex items-center border border-[#E8E5DC] bg-white text-xs">
+                              <button
+                                onClick={() => updateItem(item.id, item.quantity - 1)}
+                                className="px-2 py-0.5 hover:bg-[#F5F4EE]"
+                              >
+                                -
+                              </button>
+                              <span className="px-2 py-0.5 font-mono">{item.quantity}</span>
+                              <button
+                                onClick={() => updateItem(item.id, item.quantity + 1)}
+                                disabled={item.quantity >= item.product.inventoryQuantity}
+                                className="px-2 py-0.5 hover:bg-[#F5F4EE] disabled:opacity-30"
+                              >
+                                +
+                              </button>
+                            </div>
                           </div>
                         </div>
-                      </div>
 
-                      <button
-                        onClick={() => removeItem(item.productId)}
-                        className="p-2 text-[#6B6B6B] transition-colors hover:text-[#B91C1C]"
-                        aria-label="Remove item"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
-                  ))}
+                        <button
+                          onClick={() => removeItem(item.id)}
+                          className="p-2 text-[#6B6B6B] transition-colors hover:text-[#B91C1C]"
+                          aria-label="Remove item"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>
 
-            {/* Footer Subtotal & Checkout CTA */}
+            {/* Footer Summary & Checkout */}
             {cartItems.length > 0 && (
-              <div className="space-y-4 border-t border-[#E8E5DC] pt-6">
-                <div className="flex items-baseline justify-between">
-                  <span className="label-luxury">Zwischensumme</span>
-                  <PriceTag resalePriceCents={subtotal} size="lg" />
+              <div className="space-y-3 border-t border-[#E8E5DC] pt-4">
+                {/* Promo Code Form */}
+                {cart?.promoCode ? (
+                  <div className="flex items-center justify-between border border-[#C5A880]/40 bg-[#FAF4EB] px-3 py-1.5 text-xs">
+                    <div className="flex items-center gap-1.5 text-[#C5A880]">
+                      <Tag className="h-3.5 w-3.5" />
+                      <span className="font-mono font-semibold text-[#1A1A1A]">
+                        {cart.promoCode}
+                      </span>
+                    </div>
+                    <button
+                      onClick={removePromo}
+                      className="font-mono text-[10px] text-[#B91C1C] uppercase hover:underline"
+                    >
+                      Entfernen
+                    </button>
+                  </div>
+                ) : (
+                  <form onSubmit={handleApplyPromo} className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="Gutscheincode (z.B. WELCOME10)"
+                      value={promoCodeInput}
+                      onChange={(e) => setPromoCodeInput(e.target.value)}
+                      className="w-full border border-[#E8E5DC] bg-white px-3 py-1.5 text-xs text-[#1A1A1A] uppercase focus:border-[#C5A880] focus:outline-none"
+                    />
+                    <button
+                      type="submit"
+                      disabled={promoLoading}
+                      className="bg-[#1A1A1A] px-3 py-1.5 font-mono text-[10px] tracking-widest text-[#FAF9F6] uppercase transition-colors hover:bg-[#C5A880] hover:text-[#1A1A1A]"
+                    >
+                      Einlösen
+                    </button>
+                  </form>
+                )}
+
+                {/* Subtotal Breakdown */}
+                <div className="space-y-1 text-xs">
+                  <div className="flex justify-between text-[#6B6B6B]">
+                    <span>Zwischensumme:</span>
+                    <PriceTag resalePriceCents={subtotal} size="sm" />
+                  </div>
+                  {discount > 0 && (
+                    <div className="flex justify-between text-[#15803D]">
+                      <span>Rabatt ({cart?.promoCode}):</span>
+                      <span>-{(discount / 100).toFixed(2)} €</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between text-[#6B6B6B]">
+                    <span>Versand (DHL Express):</span>
+                    <span>{shipping === 0 ? "Gratis" : "15,00 €"}</span>
+                  </div>
+                  <div className="flex items-baseline justify-between border-t border-[#E8E5DC] pt-2 font-semibold text-[#1A1A1A]">
+                    <span>Gesamtsumme:</span>
+                    <PriceTag resalePriceCents={total} size="lg" />
+                  </div>
                 </div>
+
                 <p className="font-mono text-[10px] text-[#6B6B6B]">
-                  Inkl. MwSt., kostenfreier DHL Express Versand
+                  Inkl. 19% MwSt. ({((cart?.taxCents || 0) / 100).toFixed(2)} €)
                 </p>
+
+                <Link href="/cart" onClick={closeCartDrawer} className="block w-full">
+                  <LuxuryButton variant="dark" size="md" className="mb-2 w-full">
+                    Warenkorb Bearbeiten
+                  </LuxuryButton>
+                </Link>
 
                 <Link href="/checkout" onClick={closeCartDrawer} className="block w-full">
                   <LuxuryButton variant="gold" size="lg" shimmer className="w-full">

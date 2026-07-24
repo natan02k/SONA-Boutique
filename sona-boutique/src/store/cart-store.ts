@@ -1,104 +1,181 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
 
-export type CartItem = {
+export type ServerCartItem = {
   id: string;
+  cartId: string;
   productId: string;
-  title: string;
-  brandName: string;
-  priceCents: number;
-  imageUrl: string;
-  condition: string;
   quantity: number;
+  unitPriceCents: number;
+  product: {
+    id: string;
+    slug: string;
+    title: string;
+    resalePriceCents: number;
+    inventoryQuantity: number;
+    condition: string;
+    sku: string;
+    brand: { id: string; name: string; slug: string };
+    images: Array<{ id: string; url: string; altText?: string | null }>;
+  };
 };
 
-type CartState = {
-  items: CartItem[];
-  addItem: (item: Omit<CartItem, "id" | "quantity"> & { id?: string; quantity?: number }) => void;
-  removeItem: (productId: string) => void;
-  updateQuantity: (productId: string, quantity: number) => void;
-  clearCart: () => void;
-  getTotalCount: () => number;
-  getSubtotalCents: () => number;
+export type ServerCart = {
+  id: string;
+  customerId?: string | null;
+  status: string;
+  currencyCode: string;
+  subtotalCents: number;
+  shippingCents: number;
+  taxCents: number;
+  discountCents: number;
+  totalCents: number;
+  promoCode?: string | null;
+  items: ServerCartItem[];
 };
 
-export const useCartStore = create<CartState>()(
-  persist(
-    (set, get) => ({
-      items: [
-        // Default sample item for demonstration
-        {
-          id: "cart-sample-1",
-          productId: "1",
-          title: "Birkin 30 Gold Togo",
-          brandName: "Hermès",
-          priceCents: 2250000,
-          imageUrl:
-            "https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=1000&auto=format&fit=crop",
-          condition: "PRISTINE",
-          quantity: 1,
-        },
-      ],
+type CartStoreState = {
+  cart: ServerCart | null;
+  loading: boolean;
+  error: string | null;
+  fetchCart: () => Promise<void>;
+  addItem: (productId: string, quantity?: number) => Promise<void>;
+  updateItem: (itemId: string, quantity: number) => Promise<void>;
+  removeItem: (itemId: string) => Promise<void>;
+  applyPromo: (code: string) => Promise<void>;
+  removePromo: () => Promise<void>;
+  clearError: () => void;
+};
 
-      addItem: (newItem) => {
-        const currentItems = get().items;
-        const existingIndex = currentItems.findIndex(
-          (item) => item.productId === newItem.productId,
-        );
+export const useCartStore = create<CartStoreState>((set, get) => ({
+  cart: null,
+  loading: false,
+  error: null,
 
-        if (existingIndex > -1) {
-          const updated = [...currentItems];
-          const existing = updated[existingIndex];
-          if (existing) {
-            updated[existingIndex] = {
-              ...existing,
-              quantity: existing.quantity + (newItem.quantity || 1),
-            };
-          }
-          set({ items: updated });
-        } else {
-          set({
-            items: [
-              ...currentItems,
-              {
-                id: newItem.id || `cart-${newItem.productId}`,
-                ...newItem,
-                quantity: newItem.quantity || 1,
-              },
-            ],
-          });
-        }
-      },
+  fetchCart: async () => {
+    try {
+      set({ loading: true, error: null });
+      const res = await fetch("/api/cart");
+      if (!res.ok) {
+        set({ loading: false });
+        return;
+      }
+      const data = await res.json();
+      set({ cart: data.cart, loading: false });
+    } catch {
+      set({ loading: false, error: "Warenkorb konnte nicht geladen werden" });
+    }
+  },
 
-      removeItem: (productId) => {
-        set({ items: get().items.filter((item) => item.productId !== productId) });
-      },
+  addItem: async (productId: string, quantity = 1) => {
+    try {
+      set({ loading: true, error: null });
+      const res = await fetch("/api/cart", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ productId, quantity }),
+      });
 
-      updateQuantity: (productId, quantity) => {
-        if (quantity <= 0) {
-          get().removeItem(productId);
-          return;
-        }
+      const data = await res.json();
+      if (!res.ok) {
+        const errorMsg = data.error || "Fehler beim Hinzufügen zum Warenkorb";
+        set({ loading: false, error: errorMsg });
+        throw new Error(errorMsg);
+      }
 
-        set({
-          items: get().items.map((item) =>
-            item.productId === productId ? { ...item, quantity } : item,
-          ),
-        });
-      },
+      set({ cart: data.cart, loading: false });
+    } catch (err) {
+      set({ loading: false });
+      throw err;
+    }
+  },
 
-      clearCart: () => set({ items: [] }),
+  updateItem: async (itemId: string, quantity: number) => {
+    try {
+      set({ loading: true, error: null });
+      const res = await fetch(`/api/cart/items/${itemId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ quantity }),
+      });
 
-      getTotalCount: () => {
-        return get().items.reduce((total, item) => total + item.quantity, 0);
-      },
+      const data = await res.json();
+      if (!res.ok) {
+        const errorMsg = data.error || "Fehler beim Aktualisieren des Warenkorbs";
+        set({ loading: false, error: errorMsg });
+        throw new Error(errorMsg);
+      }
 
-      getSubtotalCents: () => {
-        return get().items.reduce((total, item) => total + item.priceCents * item.quantity, 0);
-      },
-    }),
-    {
-      name: "sona_cart_storage",
-    },
-  ),
-);
+      set({ cart: data.cart, loading: false });
+    } catch (err) {
+      set({ loading: false });
+      throw err;
+    }
+  },
+
+  removeItem: async (itemId: string) => {
+    try {
+      set({ loading: true, error: null });
+      const res = await fetch(`/api/cart/items/${itemId}`, {
+        method: "DELETE",
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        const errorMsg = data.error || "Fehler beim Entfernen des Artikels";
+        set({ loading: false, error: errorMsg });
+        throw new Error(errorMsg);
+      }
+
+      set({ cart: data.cart, loading: false });
+    } catch (err) {
+      set({ loading: false });
+      throw err;
+    }
+  },
+
+  applyPromo: async (code: string) => {
+    try {
+      set({ loading: true, error: null });
+      const res = await fetch("/api/cart/promo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        const errorMsg = data.error || "Gutscheincode ungültig";
+        set({ loading: false, error: errorMsg });
+        throw new Error(errorMsg);
+      }
+
+      set({ cart: data.cart, loading: false });
+    } catch (err) {
+      set({ loading: false });
+      throw err;
+    }
+  },
+
+  removePromo: async () => {
+    try {
+      set({ loading: true, error: null });
+      const res = await fetch("/api/cart/promo", {
+        method: "DELETE",
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        const errorMsg = data.error || "Gutscheincode konnte nicht entfernt werden";
+        set({ loading: false, error: errorMsg });
+        throw new Error(errorMsg);
+      }
+
+      set({ cart: data.cart, loading: false });
+    } catch (err) {
+      set({ loading: false });
+      throw err;
+    }
+  },
+
+  clearError: () => set({ error: null }),
+}));

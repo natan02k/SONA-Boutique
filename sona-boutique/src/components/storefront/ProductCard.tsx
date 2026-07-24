@@ -46,18 +46,15 @@ export function ProductCard({ product }: ProductCardProps) {
         )
       : null;
 
-  const handleQuickAdd = (e: React.MouseEvent) => {
+  const handleQuickAdd = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    addItem({
-      productId: product.id,
-      title: product.title,
-      brandName: product.brand.name,
-      priceCents: product.resalePriceCents,
-      imageUrl: primaryImage!,
-      condition: product.condition,
-    });
-    openCartDrawer();
+    try {
+      await addItem(product.id, 1);
+      openCartDrawer();
+    } catch {
+      // Error handled in store
+    }
   };
 
   return (

@@ -13,16 +13,19 @@ import { EASE_LUXURY } from "@/lib/motion-presets";
 export function Header() {
   const { scrollDirection, isAtTop } = useScrollDirection();
   const { toggleCartDrawer, toggleMobileMenu, openSearch } = useUIStore();
-  const { getTotalCount } = useCartStore();
+  const { cart, fetchCart } = useCartStore();
   const { customer, fetchMe } = useAuthStore();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
     fetchMe();
-  }, [fetchMe]);
+    fetchCart();
+  }, [fetchMe, fetchCart]);
 
-  const totalCartCount = mounted ? getTotalCount() : 0;
+  const totalCartCount = mounted
+    ? cart?.items.reduce((sum, item) => sum + item.quantity, 0) || 0
+    : 0;
 
   return (
     <motion.header
