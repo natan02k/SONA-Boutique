@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { getOrCreateCart, recomputeCart, CART_COOKIE } from "@/lib/cart";
 import { getCurrentCustomer } from "@/lib/auth";
 import { checkoutSchema } from "@/lib/validators/checkout";
+import { stripe } from "@/lib/stripe";
 import { cookies } from "next/headers";
 
 export async function POST(request: NextRequest) {
@@ -72,7 +73,7 @@ export async function POST(request: NextRequest) {
         ? data.shippingCountry
         : data.billingCountry || data.shippingCountry;
 
-      // 2. Create Order + OrderItems + Payment
+      // 2. Create Order + OrderItems
       const newOrder = await tx.order.create({
         data: {
           number: orderNumber,
@@ -107,8 +108,7 @@ export async function POST(request: NextRequest) {
           promoCode: recomputedCart.promoCode,
 
           fulfillmentStatus: "PENDING",
-          paymentStatus: "PAID",
-          paidAt: new Date(),
+          paymentStatus: "PENDING",
 
           items: {
             create: recomputedCart.items.map((it) => ({
@@ -121,19 +121,10 @@ export async function POST(request: NextRequest) {
               totalCents: it.unitPriceCents * it.quantity,
             })),
           },
-
-          payments: {
-            create: {
-              provider: "MOCK",
-              providerRef: `mock_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-              amountCents: recomputedCart.totalCents,
-              status: "SUCCEEDED",
-            },
-          },
         },
       });
 
-      // 3. Decrement Inventory quantities
+      // 3. Reserve Inventory
       for (const item of recomputedCart.items) {
         await tx.product.update({
           where: { id: item.productId },
@@ -145,7 +136,7 @@ export async function POST(request: NextRequest) {
         });
       }
 
-      // 4. Increment promo code usage if code used
+      // 4. Increment promo code usage if promo code was used
       if (recomputedCart.promoCode) {
         await tx.promoCode.update({
           where: { code: recomputedCart.promoCode },
@@ -172,11 +163,81 @@ export async function POST(request: NextRequest) {
     const store = await cookies();
     store.delete(CART_COOKIE);
 
-    return NextResponse.json({
-      order: {
-        id: order.id,
-        number: order.number,
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+
+    // If real Stripe API key configured, create Stripe Checkout Session
+    if (process.env.STRIPE_SECRET_KEY && !process.env.STRIPE_SECRET_KEY.includes("mock")) {
+      const lineItems = recomputedCart.items.map((it) => ({
+        price_data: {
+          currency: "eur",
+          product_data: {
+            name: it.product.title,
+            description: `Marke: ${it.product.brand?.name} | SKU: ${it.product.sku}`,
+            images: it.product.images[0]?.url ? [it.product.images[0].url] : [],
+          },
+          unit_amount: it.unitPriceCents,
+        },
+        quantity: it.quantity,
+      }));
+
+      // Add shipping line item if shippingCents > 0
+      if (recomputedCart.shippingCents > 0) {
+        lineItems.push({
+          price_data: {
+            currency: "eur",
+            product_data: {
+              name: "Versicherter DHL Express Versand",
+              description: "Express-Zustellung inkl. Transportversicherung",
+              images: [],
+            },
+            unit_amount: recomputedCart.shippingCents,
+          },
+          quantity: 1,
+        });
+      }
+
+      const session = await stripe.checkout.sessions.create({
+        payment_method_types: ["card"],
+        line_items: lineItems,
+        mode: "payment",
+        customer_email: data.email,
+        metadata: {
+          orderId: order.id,
+          orderNumber: order.number,
+          customerId: customer?.id || "",
+        },
+        success_url: `${baseUrl}/order/${order.id}?success=true`,
+        cancel_url: `${baseUrl}/checkout?canceled=true`,
+      });
+
+      return NextResponse.json({
+        checkoutUrl: session.url,
+        order: { id: order.id, number: order.number },
+      });
+    }
+
+    // Dev Fallback / Mock Mode: Auto-approve Order & return direct confirmation URL
+    await db.order.update({
+      where: { id: order.id },
+      data: {
+        paymentStatus: "PAID",
+        paidAt: new Date(),
       },
+    });
+
+    await db.payment.create({
+      data: {
+        orderId: order.id,
+        provider: "MOCK",
+        providerRef: `mock_${Date.now()}`,
+        amountCents: order.totalCents,
+        status: "SUCCEEDED",
+      },
+    });
+
+    return NextResponse.json({
+      checkoutUrl: `${baseUrl}/order/${order.id}`,
+      order: { id: order.id, number: order.number },
     });
   } catch (error: any) {
     console.error("[CHECKOUT_POST_ERROR]", error);

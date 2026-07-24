@@ -98,8 +98,11 @@ export default function CheckoutPage() {
         throw new Error(data.error || "Fehler beim Erstellen der Bestellung.");
       }
 
-      // Success -> Redirect to order confirmation
-      router.push(`/order/${data.order.id}`);
+      if (data.checkoutUrl) {
+        window.location.href = data.checkoutUrl;
+      } else {
+        router.push(`/order/${data.order.id}`);
+      }
     } catch (err: any) {
       setErrorMsg(err.message || "Ein unerwarteter Fehler ist aufgetreten.");
       setSubmitting(false);
