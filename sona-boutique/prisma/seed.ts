@@ -509,8 +509,10 @@ async function main() {
 
   // Admin User
   const adminPasswordHash = await hash("admin1234");
-  const admin = await db.customer.create({
-    data: {
+  const admin = await db.customer.upsert({
+    where: { email: "admin@sona-boutique.de" },
+    update: {},
+    create: {
       email: "admin@sona-boutique.de",
       passwordHash: adminPasswordHash,
       firstName: "SONA",
@@ -519,12 +521,14 @@ async function main() {
       isVerified: true,
     },
   });
-  console.log(`✅ Admin User erstellt: ${admin.email}`);
+  console.log(`✅ Admin User vorhanden: ${admin.email}`);
 
   // Demo Customer
   const customerPasswordHash = await hash("demo1234");
-  const customer = await db.customer.create({
-    data: {
+  const customer = await db.customer.upsert({
+    where: { email: "kunde@demo.de" },
+    update: {},
+    create: {
       email: "kunde@demo.de",
       passwordHash: customerPasswordHash,
       firstName: "Max",
@@ -547,7 +551,7 @@ async function main() {
       },
     },
   });
-  console.log(`✅ Demo Customer erstellt: ${customer.email}`);
+  console.log(`✅ Demo Customer vorhanden: ${customer.email}`);
 
   console.log("\n✅ Seed-Vorgang abgeschlossen!");
 }
