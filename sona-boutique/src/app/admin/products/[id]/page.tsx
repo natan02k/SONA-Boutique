@@ -4,10 +4,12 @@ import { useEffect, useState, use } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { LuxuryButton } from "@/components/luxury/LuxuryButton";
-import { ArrowLeft, Save, Plus, Trash2 } from "lucide-react";
+import { ImageUploader } from "@/components/admin/ImageUploader";
+import { ArrowLeft, Save } from "lucide-react";
 
 type Brand = { id: string; name: string };
 type Category = { id: string; name: string };
+type ImageItem = { id: string; url: string; altText?: string | null; position: number; isPrimary: boolean };
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -19,6 +21,7 @@ export default function AdminEditProductPage({ params }: PageProps) {
 
   const [brands, setBrands] = useState<Brand[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [productImages, setProductImages] = useState<ImageItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -56,8 +59,6 @@ export default function AdminEditProductPage({ params }: PageProps) {
     tags: "",
     isFeatured: false,
     featuredRank: 0,
-
-    imageUrls: [] as string[],
   });
 
   useEffect(() => {
@@ -120,9 +121,17 @@ export default function AdminEditProductPage({ params }: PageProps) {
               tags: target.tags || "",
               isFeatured: !!target.isFeatured,
               featuredRank: target.featuredRank || 0,
-
-              imageUrls: target.images?.map((img: any) => img.url) || [],
             });
+            // Load full image objects separately for the ImageUploader
+            setProductImages(
+              (target.images || []).map((img: any) => ({
+                id: img.id,
+                url: img.url,
+                altText: img.altText || null,
+                position: img.position ?? 0,
+                isPrimary: !!img.isPrimary,
+              }))
+            );
           }
         }
       } catch (err) {
@@ -146,22 +155,6 @@ export default function AdminEditProductPage({ params }: PageProps) {
     }
   };
 
-  const handleImageUrlChange = (index: number, value: string) => {
-    const updated = [...formData.imageUrls];
-    updated[index] = value;
-    setFormData((prev) => ({ ...prev, imageUrls: updated }));
-  };
-
-  const addImageUrl = () => {
-    setFormData((prev) => ({ ...prev, imageUrls: [...prev.imageUrls, ""] }));
-  };
-
-  const removeImageUrl = (index: number) => {
-    setFormData((prev) => ({
-      ...prev,
-      imageUrls: prev.imageUrls.filter((_, i) => i !== index),
-    }));
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -178,7 +171,7 @@ export default function AdminEditProductPage({ params }: PageProps) {
         retailPriceCents: formData.retailPriceEuro
           ? Math.round(parseFloat(formData.retailPriceEuro) * 100)
           : null,
-        imageUrls: formData.imageUrls.filter((url) => url.trim().length > 0),
+        imageUrls: productImages.map((img) => img.url),
       };
 
       const res = await fetch(`/api/admin/products/${id}`, {
@@ -457,41 +450,12 @@ export default function AdminEditProductPage({ params }: PageProps) {
           </div>
         </section>
 
-        {/* Section 4: Bilder URLs */}
-        <section className="space-y-4 border border-[#E8E5DC] bg-white p-6">
-          <div className="flex items-center justify-between border-b border-[#E8E5DC] pb-3">
-            <h3 className="font-serif text-lg text-[#1A1A1A]">4. Produktbilder (URLs)</h3>
-            <button
-              type="button"
-              onClick={addImageUrl}
-              className="flex items-center gap-1 font-mono text-[10px] text-[#C5A880] uppercase hover:underline"
-            >
-              <Plus className="h-3.5 w-3.5" /> Bild hinzufügen
-            </button>
-          </div>
-
-          <div className="space-y-3">
-            {formData.imageUrls.map((url, idx) => (
-              <div key={idx} className="flex items-center gap-2">
-                <input
-                  type="url"
-                  value={url}
-                  onChange={(e) => handleImageUrlChange(idx, e.target.value)}
-                  className="flex-1 border border-[#E8E5DC] bg-[#FAF9F6] px-3 py-2 text-xs text-[#1A1A1A] focus:border-[#C5A880] focus:outline-none"
-                />
-                {formData.imageUrls.length > 1 && (
-                  <button
-                    type="button"
-                    onClick={() => removeImageUrl(idx)}
-                    className="p-2 text-[#6B6B6B] hover:text-[#B91C1C]"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                )}
-              </div>
-            ))}
-          </div>
-        </section>
+        {/* Section 4: Produktbilder Galerie */}
+        <ImageUploader
+          productId={id}
+          initialImages={productImages}
+          onImagesChange={(imgs) => setProductImages(imgs)}
+        />
 
         {/* Submit Button */}
         <div className="flex justify-end pt-4">

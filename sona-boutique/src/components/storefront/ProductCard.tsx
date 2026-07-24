@@ -6,6 +6,7 @@ import { ShimmerImage } from "@/components/luxury/ShimmerImage";
 import { PriceTag } from "@/components/luxury/PriceTag";
 import { ConditionBadge } from "@/components/luxury/ConditionBadge";
 import { LuxuryBadge } from "@/components/luxury/LuxuryBadge";
+import { productThumb } from "@/lib/cloudinary-helpers";
 import { ShoppingBag, ArrowRight } from "lucide-react";
 import { useCartStore } from "@/store/cart-store";
 import { useUIStore } from "@/store/ui-store";
@@ -30,13 +31,16 @@ export function ProductCard({ product }: ProductCardProps) {
   const { addItem } = useCartStore();
   const { openCartDrawer } = useUIStore();
 
-  const primaryImage =
+  const rawPrimary =
     product.images && product.images.length > 0
       ? product.images[0]?.url
       : "https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=1000&auto=format&fit=crop";
 
-  const secondaryImage =
-    product.images && product.images.length > 1 ? product.images[1]?.url : primaryImage;
+  const rawSecondary =
+    product.images && product.images.length > 1 ? product.images[1]?.url : rawPrimary;
+
+  const primaryImage = productThumb(rawPrimary!);
+  const secondaryImage = productThumb(rawSecondary!);
 
   const discountPercent =
     product.compareAtPriceCents && product.compareAtPriceCents > product.resalePriceCents
