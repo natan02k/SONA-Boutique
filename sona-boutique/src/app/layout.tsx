@@ -6,6 +6,7 @@ import { Header } from "@/components/storefront/Header";
 import { MobileMenu } from "@/components/storefront/MobileMenu";
 import { CartDrawer } from "@/components/storefront/CartDrawer";
 import { SearchModal } from "@/components/storefront/SearchModal";
+import { CookieBanner } from "@/components/storefront/CookieBanner";
 import { Footer } from "@/components/storefront/Footer";
 import { PageTransition } from "@/components/motion/PageTransition";
 import "./globals.css";
@@ -56,6 +57,7 @@ export default function RootLayout({
           <MobileMenu />
           <CartDrawer />
           <SearchModal />
+          <CookieBanner />
           <main className="flex-1">
             <PageTransition>{children}</PageTransition>
           </main>

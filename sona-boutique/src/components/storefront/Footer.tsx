@@ -76,8 +76,8 @@ export function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/versand" className="transition-colors hover:text-[#C5A880]">
-                  Versand & Versicherung
+                <Link href="/versandkosten" className="transition-colors hover:text-[#C5A880]">
+                  Versand & Versandkosten
                 </Link>
               </li>
               <li>
