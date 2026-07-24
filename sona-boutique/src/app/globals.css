@@ -1,6 +1,5 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@config "../../tailwind.config.ts";
 
 @layer base {
   :root {
@@ -85,27 +84,65 @@
   }
 
   .container-luxury {
-    @apply mx-auto max-w-7xl px-4 sm:px-6 lg:px-8;
+    margin-left: auto;
+    margin-right: auto;
+    max-width: 80rem;
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  @media (min-width: 640px) {
+    .container-luxury {
+      padding-left: 1.5rem;
+      padding-right: 1.5rem;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .container-luxury {
+      padding-left: 2rem;
+      padding-right: 2rem;
+    }
   }
 
   .container-wide {
-    @apply mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-8;
+    margin-left: auto;
+    margin-right: auto;
+    max-width: 1600px;
+    padding-left: 1rem;
+    padding-right: 1rem;
   }
 
   .heading-luxury {
-    @apply text-foreground font-serif font-light tracking-tight;
+    font-family: var(--font-cormorant), Georgia, serif;
+    font-weight: 300;
+    letter-spacing: -0.025em;
+    color: var(--foreground);
   }
 
   .label-luxury {
-    @apply text-muted-foreground font-mono text-[10px] tracking-[0.2em] uppercase;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    color: var(--muted-foreground);
+    font-family: var(--font-jetbrains), monospace;
   }
 
   .button-luxury {
-    @apply inline-flex items-center justify-center text-xs font-medium tracking-widest uppercase transition-all duration-300;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-size: 0.75rem;
+    font-weight: 500;
+    transition-property: all;
+    transition-duration: 300ms;
   }
 
   .gold-divider {
-    @apply via-accent h-px bg-gradient-to-r from-transparent to-transparent;
+    height: 1px;
+    background-image: linear-gradient(to right, transparent, var(--accent), transparent);
   }
 }
 
