@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { Inter, Cormorant_Garamond } from "next/font/google";
+import { Inter, Cormorant_Garamond, JetBrains_Mono } from "next/font/google";
+import { Providers } from "@/providers/providers";
 import "./globals.css";
 
 const inter = Inter({
@@ -15,9 +16,19 @@ const cormorant = Cormorant_Garamond({
   display: "swap",
 });
 
+const jetbrains = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-jetbrains",
+  display: "swap",
+});
+
 export const metadata: Metadata = {
-  title: "SONA Boutique - Luxushandtaschen",
-  description: "Authentifizierte gebrauchte Luxushandtaschen",
+  title: {
+    default: "SONA Boutique — Pre-Owned Luxury Handbags",
+    template: "%s | SONA Boutique",
+  },
+  description:
+    "Zertifizierte gebrauchte Luxushandtaschen von Chanel, Hermès, Louis Vuitton & mehr.",
 };
 
 export default function RootLayout({
@@ -26,9 +37,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="de">
-      <body className={`${inter.variable} ${cormorant.variable} ${inter.className}`}>
-        {children}
+    <html
+      lang="de"
+      className={`${inter.variable} ${cormorant.variable} ${jetbrains.variable}`}
+      suppressHydrationWarning
+    >
+      <body className="bg-background text-foreground selection:bg-accent selection:text-primary-foreground min-h-screen font-sans antialiased">
+        <Providers>{children}</Providers>
       </body>
     </html>
   );
