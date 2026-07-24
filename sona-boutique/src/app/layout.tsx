@@ -27,9 +27,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="de">
-      <body
-        className={`${inter.variable} ${cormorant.variable} ${inter.className}`}
-      >
+      <body className={`${inter.variable} ${cormorant.variable} ${inter.className}`}>
         {children}
       </body>
     </html>

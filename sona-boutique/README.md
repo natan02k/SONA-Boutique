@@ -43,3 +43,4 @@ sona-boutique/
 │   └── store/        # Zustand Stores
 ├── prisma/           # Prisma Schema & Migrations
 └── docs/             # Dokumentation
+```

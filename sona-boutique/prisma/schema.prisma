@@ -27,6 +27,7 @@ model Customer {
   favorites       Favorite[]
   carts           Cart[]
   orders          Order[]
+  passwordResetTokens PasswordResetToken[]
 
   @@index([email])
 }
@@ -39,6 +40,19 @@ model Session {
   expiresAt    DateTime
   ipAddress    String?
   userAgent    String?
+  createdAt    DateTime @default(now())
+
+  @@index([customerId])
+  @@index([token])
+}
+
+model PasswordResetToken {
+  id           String   @id @default(uuid())
+  customerId   String
+  customer     Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  tokenHash    String   @unique
+  expiresAt    DateTime
+  usedAt       DateTime?
   createdAt    DateTime @default(now())
 
   @@index([customerId])
