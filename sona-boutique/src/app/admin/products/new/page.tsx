@@ -4,10 +4,12 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { LuxuryButton } from "@/components/luxury/LuxuryButton";
-import { ArrowLeft, Save, ImageIcon } from "lucide-react";
+import { ImageUploader } from "@/components/admin/ImageUploader";
+import { ArrowLeft, Save, CheckCircle2, ArrowRight, ImageIcon } from "lucide-react";
 
 type Brand = { id: string; name: string };
 type Category = { id: string; name: string };
+type ImageItem = { id: string; url: string; altText?: string | null; position: number; isPrimary: boolean };
 
 export default function AdminNewProductPage() {
   const router = useRouter();
@@ -15,6 +17,11 @@ export default function AdminNewProductPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  // After product is created we switch to step 2
+  const [step, setStep] = useState<1 | 2>(1);
+  const [createdProductId, setCreatedProductId] = useState<string | null>(null);
+  const [productImages, setProductImages] = useState<ImageItem[]>([]);
 
   const [formData, setFormData] = useState({
     title: "",
@@ -85,8 +92,8 @@ export default function AdminNewProductPage() {
     }
   };
 
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  // Step 1: Create the product, then move to step 2
+  const handleSubmitStep1 = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.title || !formData.brandId || !formData.resalePriceEuro) {
       setErrorMsg("Bitte füllen Sie alle Pflichtfelder aus.");
@@ -120,17 +127,20 @@ export default function AdminNewProductPage() {
         throw new Error(data.error || "Fehler beim Erstellen des Produkts.");
       }
 
-      // Redirect to edit page where ImageUploader is available
-      router.push(`/admin/products/${data.product.id}?new=1`);
+      // Move to step 2: image upload
+      setCreatedProductId(data.product.id);
+      setStep(2);
+      window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (err: any) {
       setErrorMsg(err.message || "Ein Unerwarteter Fehler ist aufgetreten.");
+    } finally {
       setSubmitting(false);
     }
   };
 
   return (
     <div className="max-w-4xl space-y-8">
-      {/* Header Bar */}
+      {/* Header */}
       <div className="flex items-center justify-between border-b border-[#E8E5DC] pb-6">
         <div className="space-y-1">
           <Link
@@ -139,7 +149,26 @@ export default function AdminNewProductPage() {
           >
             <ArrowLeft className="h-3.5 w-3.5" /> Zurück zu allen Produkten
           </Link>
-          <h1 className="font-serif text-3xl font-light text-[#1A1A1A]">Neues Produkt Anlegen</h1>
+          <h1 className="font-serif text-3xl font-light text-[#1A1A1A]">
+            {step === 1 ? "Neues Produkt Anlegen" : `Bilder hochladen — ${formData.title}`}
+          </h1>
+        </div>
+
+        {/* Step indicator */}
+        <div className="hidden items-center gap-2 sm:flex">
+          <div className={`flex items-center gap-2 font-mono text-[10px] uppercase ${step === 1 ? "text-[#C5A880]" : "text-[#6B6B6B]"}`}>
+            <span className={`flex h-6 w-6 items-center justify-center rounded-full border font-bold text-[11px] ${step === 1 ? "border-[#C5A880] bg-[#C5A880] text-white" : "border-[#C5A880] text-[#C5A880]"}`}>
+              {step > 1 ? <CheckCircle2 className="h-4 w-4" /> : "1"}
+            </span>
+            Produktdaten
+          </div>
+          <ArrowRight className="h-3 w-3 text-[#D4CFC4]" />
+          <div className={`flex items-center gap-2 font-mono text-[10px] uppercase ${step === 2 ? "text-[#C5A880]" : "text-[#9A9080]"}`}>
+            <span className={`flex h-6 w-6 items-center justify-center rounded-full border font-bold text-[11px] ${step === 2 ? "border-[#C5A880] bg-[#C5A880] text-white" : "border-[#D4CFC4] text-[#9A9080]"}`}>
+              2
+            </span>
+            Fotos hochladen
+          </div>
         </div>
       </div>
 
@@ -149,317 +178,248 @@ export default function AdminNewProductPage() {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-8">
-        {/* Section 1: Stammdaten */}
-        <section className="space-y-4 border border-[#E8E5DC] bg-white p-6">
-          <h3 className="border-b border-[#E8E5DC] pb-3 font-serif text-lg text-[#1A1A1A]">
-            1. Produktstammdaten
-          </h3>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div className="space-y-1 sm:col-span-2">
-              <label className="label-luxury block text-[10px]">Titel *</label>
-              <input
-                type="text"
-                name="title"
-                required
-                placeholder="z.B. Hermès Birkin 30 Togo Gold"
-                value={formData.title}
-                onChange={handleChange}
-                className="w-full border border-[#E8E5DC] bg-[#FAF9F6] px-3 py-2 text-xs text-[#1A1A1A] focus:border-[#C5A880] focus:outline-none"
-              />
-            </div>
+      {/* ─── STEP 1: Product Details Form ─── */}
+      {step === 1 && (
+        <form onSubmit={handleSubmitStep1} className="space-y-8">
+          {/* Section 1: Stammdaten */}
+          <section className="space-y-4 border border-[#E8E5DC] bg-white p-6">
+            <h3 className="border-b border-[#E8E5DC] pb-3 font-serif text-lg text-[#1A1A1A]">
+              1. Produktstammdaten
+            </h3>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="space-y-1 sm:col-span-2">
+                <label className="label-luxury block text-[10px]">Titel *</label>
+                <input
+                  type="text"
+                  name="title"
+                  required
+                  placeholder="z.B. Hermès Birkin 30 Togo Gold"
+                  value={formData.title}
+                  onChange={handleChange}
+                  className="w-full border border-[#E8E5DC] bg-[#FAF9F6] px-3 py-2 text-xs text-[#1A1A1A] focus:border-[#C5A880] focus:outline-none"
+                />
+              </div>
 
-            <div className="space-y-1 sm:col-span-2">
-              <label className="label-luxury block text-[10px]">Untertitel / Zustandshinweis</label>
-              <input
-                type="text"
-                name="subtitle"
-                placeholder="Exemplarischer Zustand mit Ursprungsverpackung"
-                value={formData.subtitle}
-                onChange={handleChange}
-                className="w-full border border-[#E8E5DC] bg-[#FAF9F6] px-3 py-2 text-xs text-[#1A1A1A] focus:border-[#C5A880] focus:outline-none"
-              />
-            </div>
+              <div className="space-y-1 sm:col-span-2">
+                <label className="label-luxury block text-[10px]">Untertitel / Zustandshinweis</label>
+                <input
+                  type="text"
+                  name="subtitle"
+                  placeholder="Exemplarischer Zustand mit Ursprungsverpackung"
+                  value={formData.subtitle}
+                  onChange={handleChange}
+                  className="w-full border border-[#E8E5DC] bg-[#FAF9F6] px-3 py-2 text-xs text-[#1A1A1A] focus:border-[#C5A880] focus:outline-none"
+                />
+              </div>
 
-            <div className="space-y-1">
-              <label className="label-luxury block text-[10px]">Marke *</label>
-              <select
-                name="brandId"
-                required
-                value={formData.brandId}
-                onChange={handleChange}
-                className="w-full border border-[#E8E5DC] bg-[#FAF9F6] px-3 py-2 text-xs text-[#1A1A1A] focus:border-[#C5A880] focus:outline-none"
-              >
-                {brands.map((b) => (
-                  <option key={b.id} value={b.id}>
-                    {b.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+              <div className="space-y-1">
+                <label className="label-luxury block text-[10px]">Marke *</label>
+                <select
+                  name="brandId"
+                  required
+                  value={formData.brandId}
+                  onChange={handleChange}
+                  className="w-full border border-[#E8E5DC] bg-[#FAF9F6] px-3 py-2 text-xs text-[#1A1A1A] focus:border-[#C5A880] focus:outline-none"
+                >
+                  {brands.map((b) => (
+                    <option key={b.id} value={b.id}>
+                      {b.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-            <div className="space-y-1">
-              <label className="label-luxury block text-[10px]">Kategorie</label>
-              <select
-                name="categoryId"
-                value={formData.categoryId}
-                onChange={handleChange}
-                className="w-full border border-[#E8E5DC] bg-[#FAF9F6] px-3 py-2 text-xs text-[#1A1A1A] focus:border-[#C5A880] focus:outline-none"
-              >
-                <option value="">Keine Kategorie</option>
-                {categories.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+              <div className="space-y-1">
+                <label className="label-luxury block text-[10px]">Kategorie</label>
+                <select
+                  name="categoryId"
+                  value={formData.categoryId}
+                  onChange={handleChange}
+                  className="w-full border border-[#E8E5DC] bg-[#FAF9F6] px-3 py-2 text-xs text-[#1A1A1A] focus:border-[#C5A880] focus:outline-none"
+                >
+                  <option value="">Keine Kategorie</option>
+                  {categories.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-            <div className="space-y-1">
-              <label className="label-luxury block text-[10px]">Status *</label>
-              <select
-                name="status"
-                value={formData.status}
-                onChange={handleChange}
-                className="w-full border border-[#E8E5DC] bg-[#FAF9F6] px-3 py-2 text-xs text-[#1A1A1A] focus:border-[#C5A880] focus:outline-none"
-              >
-                <option value="DRAFT">DRAFT (Entwurf — nicht öffentlich)</option>
-                <option value="PUBLISHED">PUBLISHED (Aktiv im Katalog)</option>
-              </select>
-            </div>
+              <div className="space-y-1">
+                <label className="label-luxury block text-[10px]">Status *</label>
+                <select
+                  name="status"
+                  value={formData.status}
+                  onChange={handleChange}
+                  className="w-full border border-[#E8E5DC] bg-[#FAF9F6] px-3 py-2 text-xs text-[#1A1A1A] focus:border-[#C5A880] focus:outline-none"
+                >
+                  <option value="DRAFT">DRAFT (Entwurf — nicht öffentlich)</option>
+                  <option value="PUBLISHED">PUBLISHED (Aktiv im Katalog)</option>
+                </select>
+              </div>
 
-            <div className="space-y-1">
-              <label className="label-luxury block text-[10px]">
-                SKU (Optional — Auto-Generierung)
-              </label>
-              <input
-                type="text"
-                name="sku"
-                placeholder="HERMES-BIRKIN-30-GOLD"
-                value={formData.sku}
-                onChange={handleChange}
-                className="w-full border border-[#E8E5DC] bg-[#FAF9F6] px-3 py-2 text-xs text-[#1A1A1A] focus:border-[#C5A880] focus:outline-none"
-              />
-            </div>
+              <div className="space-y-1">
+                <label className="label-luxury block text-[10px]">SKU (Optional)</label>
+                <input
+                  type="text"
+                  name="sku"
+                  placeholder="HERMES-BIRKIN-30-GOLD"
+                  value={formData.sku}
+                  onChange={handleChange}
+                  className="w-full border border-[#E8E5DC] bg-[#FAF9F6] px-3 py-2 text-xs text-[#1A1A1A] focus:border-[#C5A880] focus:outline-none"
+                />
+              </div>
 
-            <div className="space-y-1 sm:col-span-2">
-              <label className="label-luxury block text-[10px]">Beschreibung *</label>
-              <textarea
-                name="description"
-                rows={4}
-                required
-                value={formData.description}
-                onChange={handleChange}
-                className="w-full border border-[#E8E5DC] bg-[#FAF9F6] p-3 text-xs text-[#1A1A1A] focus:border-[#C5A880] focus:outline-none"
-              />
+              <div className="space-y-1 sm:col-span-2">
+                <label className="label-luxury block text-[10px]">Beschreibung *</label>
+                <textarea
+                  name="description"
+                  rows={4}
+                  required
+                  value={formData.description}
+                  onChange={handleChange}
+                  className="w-full border border-[#E8E5DC] bg-[#FAF9F6] p-3 text-xs text-[#1A1A1A] focus:border-[#C5A880] focus:outline-none"
+                />
+              </div>
             </div>
+          </section>
+
+          {/* Section 2: Luxus-Spezifikationen */}
+          <section className="space-y-4 border border-[#E8E5DC] bg-white p-6">
+            <h3 className="border-b border-[#E8E5DC] pb-3 font-serif text-lg text-[#1A1A1A]">
+              2. Luxus-Spezifikationen
+            </h3>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="space-y-1">
+                <label className="label-luxury block text-[10px]">Material</label>
+                <input type="text" name="material" placeholder="Togo Kuhleder" value={formData.material} onChange={handleChange} className="w-full border border-[#E8E5DC] bg-[#FAF9F6] px-3 py-2 text-xs text-[#1A1A1A] focus:border-[#C5A880] focus:outline-none" />
+              </div>
+              <div className="space-y-1">
+                <label className="label-luxury block text-[10px]">Farbe</label>
+                <input type="text" name="color" placeholder="Gold / Braun" value={formData.color} onChange={handleChange} className="w-full border border-[#E8E5DC] bg-[#FAF9F6] px-3 py-2 text-xs text-[#1A1A1A] focus:border-[#C5A880] focus:outline-none" />
+              </div>
+              <div className="space-y-1">
+                <label className="label-luxury block text-[10px]">Hardware</label>
+                <input type="text" name="hardware" placeholder="Gold Plated" value={formData.hardware} onChange={handleChange} className="w-full border border-[#E8E5DC] bg-[#FAF9F6] px-3 py-2 text-xs text-[#1A1A1A] focus:border-[#C5A880] focus:outline-none" />
+              </div>
+              <div className="space-y-1">
+                <label className="label-luxury block text-[10px]">Baujahr</label>
+                <input type="number" name="manufacturingYear" value={formData.manufacturingYear} onChange={handleChange} className="w-full border border-[#E8E5DC] bg-[#FAF9F6] px-3 py-2 text-xs text-[#1A1A1A] focus:border-[#C5A880] focus:outline-none" />
+              </div>
+              <div className="space-y-1">
+                <label className="label-luxury block text-[10px]">Zustand *</label>
+                <select name="condition" value={formData.condition} onChange={handleChange} className="w-full border border-[#E8E5DC] bg-[#FAF9F6] px-3 py-2 text-xs text-[#1A1A1A] focus:border-[#C5A880] focus:outline-none">
+                  <option value="PRISTINE">PRISTINE (Neuwertig)</option>
+                  <option value="EXCELLENT">EXCELLENT (Hervorragend)</option>
+                  <option value="VERY_GOOD">VERY_GOOD (Sehr gut)</option>
+                  <option value="GOOD">GOOD (Gut)</option>
+                </select>
+              </div>
+              <div className="space-y-1">
+                <label className="label-luxury block text-[10px]">Zertifikat-Nr.</label>
+                <input type="text" name="authenticityCertNo" placeholder="LX-2026-0001" value={formData.authenticityCertNo} onChange={handleChange} className="w-full border border-[#E8E5DC] bg-[#FAF9F6] px-3 py-2 text-xs text-[#1A1A1A] focus:border-[#C5A880] focus:outline-none" />
+              </div>
+            </div>
+          </section>
+
+          {/* Section 3: Beigaben */}
+          <section className="space-y-4 border border-[#E8E5DC] bg-white p-6">
+            <h3 className="border-b border-[#E8E5DC] pb-3 font-serif text-lg text-[#1A1A1A]">3. Beigaben &amp; Zubehör</h3>
+            <div className="grid grid-cols-2 gap-4 text-xs sm:grid-cols-4">
+              {[
+                { name: "includesOriginalBox", label: "Originalkarton" },
+                { name: "includesDustBag", label: "Staubbeutel" },
+                { name: "includesReceipt", label: "Kaufbeleg" },
+                { name: "includesAuthenticityCard", label: "Echtheitskarte" },
+              ].map((item) => (
+                <label key={item.name} className="flex cursor-pointer items-center gap-2">
+                  <input
+                    type="checkbox"
+                    name={item.name}
+                    checked={formData[item.name as keyof typeof formData] as boolean}
+                    onChange={handleChange}
+                    className="accent-[#C5A880]"
+                  />
+                  <span>{item.label}</span>
+                </label>
+              ))}
+            </div>
+          </section>
+
+          {/* Section 4: Preisauszeichnung */}
+          <section className="space-y-4 border border-[#E8E5DC] bg-white p-6">
+            <h3 className="border-b border-[#E8E5DC] pb-3 font-serif text-lg text-[#1A1A1A]">4. Preisauszeichnung &amp; Lagerbestand</h3>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <div className="space-y-1">
+                <label className="label-luxury block text-[10px]">Verkaufspreis (€) *</label>
+                <input type="number" name="resalePriceEuro" step="0.01" required placeholder="22500.00" value={formData.resalePriceEuro} onChange={handleChange} className="w-full border border-[#E8E5DC] bg-[#FAF9F6] px-3 py-2 text-xs text-[#1A1A1A] focus:border-[#C5A880] focus:outline-none" />
+              </div>
+              <div className="space-y-1">
+                <label className="label-luxury block text-[10px]">Streichpreis (€)</label>
+                <input type="number" name="compareAtPriceEuro" step="0.01" placeholder="25000.00" value={formData.compareAtPriceEuro} onChange={handleChange} className="w-full border border-[#E8E5DC] bg-[#FAF9F6] px-3 py-2 text-xs text-[#1A1A1A] focus:border-[#C5A880] focus:outline-none" />
+              </div>
+              <div className="space-y-1">
+                <label className="label-luxury block text-[10px]">Lagerbestand *</label>
+                <input type="number" name="inventoryQuantity" required min={0} value={formData.inventoryQuantity} onChange={handleChange} className="w-full border border-[#E8E5DC] bg-[#FAF9F6] px-3 py-2 text-xs text-[#1A1A1A] focus:border-[#C5A880] focus:outline-none" />
+              </div>
+            </div>
+          </section>
+
+          {/* Submit Step 1 */}
+          <div className="flex justify-end pt-2">
+            <LuxuryButton type="submit" disabled={submitting} variant="gold" size="lg" shimmer>
+              <Save className="mr-2 h-4 w-4" />
+              {submitting ? "Wird angelegt..." : "Weiter: Fotos hochladen →"}
+            </LuxuryButton>
           </div>
-        </section>
+        </form>
+      )}
 
-        {/* Section 2: Luxus-Attribute */}
-        <section className="space-y-4 border border-[#E8E5DC] bg-white p-6">
-          <h3 className="border-b border-[#E8E5DC] pb-3 font-serif text-lg text-[#1A1A1A]">
-            2. Luxus-Spezifikationen
-          </h3>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div className="space-y-1">
-              <label className="label-luxury block text-[10px]">Material</label>
-              <input
-                type="text"
-                name="material"
-                placeholder="Togo Kuhleder"
-                value={formData.material}
-                onChange={handleChange}
-                className="w-full border border-[#E8E5DC] bg-[#FAF9F6] px-3 py-2 text-xs text-[#1A1A1A] focus:border-[#C5A880] focus:outline-none"
-              />
-            </div>
-
-            <div className="space-y-1">
-              <label className="label-luxury block text-[10px]">Farbe</label>
-              <input
-                type="text"
-                name="color"
-                placeholder="Gold / Braun"
-                value={formData.color}
-                onChange={handleChange}
-                className="w-full border border-[#E8E5DC] bg-[#FAF9F6] px-3 py-2 text-xs text-[#1A1A1A] focus:border-[#C5A880] focus:outline-none"
-              />
-            </div>
-
-            <div className="space-y-1">
-              <label className="label-luxury block text-[10px]">Hardware</label>
-              <input
-                type="text"
-                name="hardware"
-                placeholder="Gold Plated"
-                value={formData.hardware}
-                onChange={handleChange}
-                className="w-full border border-[#E8E5DC] bg-[#FAF9F6] px-3 py-2 text-xs text-[#1A1A1A] focus:border-[#C5A880] focus:outline-none"
-              />
-            </div>
-
-            <div className="space-y-1">
-              <label className="label-luxury block text-[10px]">Baujahr</label>
-              <input
-                type="number"
-                name="manufacturingYear"
-                value={formData.manufacturingYear}
-                onChange={handleChange}
-                className="w-full border border-[#E8E5DC] bg-[#FAF9F6] px-3 py-2 text-xs text-[#1A1A1A] focus:border-[#C5A880] focus:outline-none"
-              />
-            </div>
-
-            <div className="space-y-1">
-              <label className="label-luxury block text-[10px]">Zustand *</label>
-              <select
-                name="condition"
-                value={formData.condition}
-                onChange={handleChange}
-                className="w-full border border-[#E8E5DC] bg-[#FAF9F6] px-3 py-2 text-xs text-[#1A1A1A] focus:border-[#C5A880] focus:outline-none"
-              >
-                <option value="PRISTINE">PRISTINE (Neuwertig)</option>
-                <option value="EXCELLENT">EXCELLENT (Hervorragend)</option>
-                <option value="VERY_GOOD">VERY_GOOD (Sehr gut)</option>
-                <option value="GOOD">GOOD (Gut)</option>
-              </select>
-            </div>
-
-            <div className="space-y-1">
-              <label className="label-luxury block text-[10px]">Zertifikat-Nr.</label>
-              <input
-                type="text"
-                name="authenticityCertNo"
-                placeholder="LX-2026-0001"
-                value={formData.authenticityCertNo}
-                onChange={handleChange}
-                className="w-full border border-[#E8E5DC] bg-[#FAF9F6] px-3 py-2 text-xs text-[#1A1A1A] focus:border-[#C5A880] focus:outline-none"
-              />
-            </div>
-          </div>
-        </section>
-
-        {/* Section 3: Inclusions */}
-        <section className="space-y-4 border border-[#E8E5DC] bg-white p-6">
-          <h3 className="border-b border-[#E8E5DC] pb-3 font-serif text-lg text-[#1A1A1A]">
-            3. Beigaben & Zubehör
-          </h3>
-          <div className="grid grid-cols-2 gap-4 text-xs sm:grid-cols-4">
-            <label className="flex cursor-pointer items-center gap-2">
-              <input
-                type="checkbox"
-                name="includesOriginalBox"
-                checked={formData.includesOriginalBox}
-                onChange={handleChange}
-                className="accent-[#C5A880]"
-              />
-              <span>Originalkarton</span>
-            </label>
-            <label className="flex cursor-pointer items-center gap-2">
-              <input
-                type="checkbox"
-                name="includesDustBag"
-                checked={formData.includesDustBag}
-                onChange={handleChange}
-                className="accent-[#C5A880]"
-              />
-              <span>Staubbeutel</span>
-            </label>
-            <label className="flex cursor-pointer items-center gap-2">
-              <input
-                type="checkbox"
-                name="includesReceipt"
-                checked={formData.includesReceipt}
-                onChange={handleChange}
-                className="accent-[#C5A880]"
-              />
-              <span>Kaufbeleg</span>
-            </label>
-            <label className="flex cursor-pointer items-center gap-2">
-              <input
-                type="checkbox"
-                name="includesAuthenticityCard"
-                checked={formData.includesAuthenticityCard}
-                onChange={handleChange}
-                className="accent-[#C5A880]"
-              />
-              <span>Echtheitskarte</span>
-            </label>
-          </div>
-        </section>
-
-        {/* Section 4: Preisauszeichnung */}
-        <section className="space-y-4 border border-[#E8E5DC] bg-white p-6">
-          <h3 className="border-b border-[#E8E5DC] pb-3 font-serif text-lg text-[#1A1A1A]">
-            4. Preisauszeichnung & Lagerbestand
-          </h3>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <div className="space-y-1">
-              <label className="label-luxury block text-[10px]">Verkaufspreis (€) *</label>
-              <input
-                type="number"
-                name="resalePriceEuro"
-                step="0.01"
-                required
-                placeholder="22500.00"
-                value={formData.resalePriceEuro}
-                onChange={handleChange}
-                className="w-full border border-[#E8E5DC] bg-[#FAF9F6] px-3 py-2 text-xs text-[#1A1A1A] focus:border-[#C5A880] focus:outline-none"
-              />
-            </div>
-
-            <div className="space-y-1">
-              <label className="label-luxury block text-[10px]">Streichpreis (€)</label>
-              <input
-                type="number"
-                name="compareAtPriceEuro"
-                step="0.01"
-                placeholder="25000.00"
-                value={formData.compareAtPriceEuro}
-                onChange={handleChange}
-                className="w-full border border-[#E8E5DC] bg-[#FAF9F6] px-3 py-2 text-xs text-[#1A1A1A] focus:border-[#C5A880] focus:outline-none"
-              />
-            </div>
-
-            <div className="space-y-1">
-              <label className="label-luxury block text-[10px]">Lagerbestand *</label>
-              <input
-                type="number"
-                name="inventoryQuantity"
-                required
-                min={0}
-                value={formData.inventoryQuantity}
-                onChange={handleChange}
-                className="w-full border border-[#E8E5DC] bg-[#FAF9F6] px-3 py-2 text-xs text-[#1A1A1A] focus:border-[#C5A880] focus:outline-none"
-              />
-            </div>
-          </div>
-        </section>
-
-        {/* Section 5: Bilder – Hinweis */}
-        <section className="space-y-3 border border-[#C5A880]/30 bg-[#C5A880]/5 p-6">
-          <div className="flex items-start gap-3">
-            <ImageIcon className="mt-0.5 h-5 w-5 flex-shrink-0 text-[#C5A880]" />
+      {/* ─── STEP 2: Image Upload ─── */}
+      {step === 2 && createdProductId && (
+        <div className="space-y-6">
+          {/* Success Banner */}
+          <div className="flex items-start gap-3 border border-emerald-200 bg-emerald-50 p-4">
+            <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0 text-emerald-600" />
             <div>
-              <h3 className="font-serif text-base text-[#1A1A1A]">5. Produktbilder</h3>
-              <p className="mt-1 font-mono text-[10px] leading-relaxed text-[#6B6B6B]">
-                Nach dem Anlegen des Produkts werden Sie automatisch zur Bearbeitungsseite
-                weitergeleitet, wo Sie Bilder per{" "}
-                <strong className="text-[#1A1A1A]">Drag &amp; Drop</strong> direkt von Ihrem
-                Computer hochladen können. Die Bilder werden automatisch bei Cloudinary
-                gespeichert und optimiert.
+              <p className="font-mono text-[11px] font-semibold text-emerald-800">
+                „{formData.title}" wurde erfolgreich angelegt!
+              </p>
+              <p className="mt-0.5 font-mono text-[10px] text-emerald-700">
+                Laden Sie jetzt Produktfotos per Drag &amp; Drop hoch. Sie können diesen Schritt auch überspringen.
               </p>
             </div>
           </div>
-        </section>
 
-        {/* Submit */}
-        <div className="flex justify-end pt-4">
-          <LuxuryButton type="submit" disabled={submitting} variant="gold" size="lg" shimmer>
-            <Save className="mr-2 h-4 w-4" />
-            {submitting ? "Wird angelegt..." : "Produkt Anlegen & Bilder Hochladen →"}
-          </LuxuryButton>
+          {/* Image Uploader */}
+          <ImageUploader
+            productId={createdProductId}
+            initialImages={productImages}
+            onImagesChange={(imgs) => setProductImages(imgs)}
+          />
+
+          {/* Actions */}
+          <div className="flex items-center justify-between border-t border-[#E8E5DC] pt-6">
+            <button
+              type="button"
+              onClick={() => router.push("/admin/products")}
+              className="font-mono text-[10px] uppercase text-[#6B6B6B] hover:text-[#1A1A1A] underline underline-offset-2"
+            >
+              Überspringen → Zurück zur Produktliste
+            </button>
+            <LuxuryButton
+              onClick={() => router.push(`/admin/products/${createdProductId}`)}
+              variant="gold"
+              size="lg"
+              shimmer
+            >
+              <CheckCircle2 className="mr-2 h-4 w-4" />
+              Fertig — Produkt bearbeiten
+            </LuxuryButton>
+          </div>
         </div>
-      </form>
+      )}
     </div>
   );
 }

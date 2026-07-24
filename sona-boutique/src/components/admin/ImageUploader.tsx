@@ -80,37 +80,37 @@ export function ImageUploader({ productId, initialImages, onImagesChange }: Imag
       fd.append("signature", sig.signature);
       fd.append("folder", sig.folder);
 
-      // 3. Upload directly to Cloudinary via XHR (for progress tracking)
+      // 3. Upload directly to Cloudinary via fetch
       const cloudinaryUrl = `https://api.cloudinary.com/v1_1/${sig.cloudName}/image/upload`;
 
-      const cloudRes = await new Promise<any>((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
-        xhr.open("POST", cloudinaryUrl);
+      // Simulate progress until we get a response
+      const progressInterval = setInterval(() => {
+        setUploading((prev) =>
+          prev.map((u) =>
+            u.id === uploadItem.id && u.progress < 85
+              ? { ...u, progress: u.progress + 5 }
+              : u,
+          ),
+        );
+      }, 300);
 
-        xhr.upload.addEventListener("progress", (evt) => {
-          if (evt.lengthComputable) {
-            const pct = Math.round((evt.loaded / evt.total) * 90); // cap at 90 until DB save
-            setUploading((prev) =>
-              prev.map((u) =>
-                u.id === uploadItem.id ? { ...u, progress: pct } : u
-              )
-            );
-          }
-        });
-
-        xhr.addEventListener("load", () => {
-          if (xhr.status >= 200 && xhr.status < 300) {
-            resolve(JSON.parse(xhr.responseText));
-          } else {
-            reject(new Error(`Cloudinary Fehler: ${xhr.status}`));
-          }
-        });
-
-        xhr.addEventListener("error", () => reject(new Error("Netzwerkfehler beim Upload")));
-        xhr.send(fd);
+      const cloudRes = await fetch(cloudinaryUrl, {
+        method: "POST",
+        body: fd,
       });
 
-      const imageUrl: string = cloudRes.secure_url;
+      clearInterval(progressInterval);
+
+      if (!cloudRes.ok) {
+        const errBody = await cloudRes.json().catch(() => ({}));
+        const msg =
+          (errBody as any)?.error?.message ||
+          `Cloudinary Fehler ${cloudRes.status}: Bitte prüfen Sie Ihre API-Zugangsdaten in der .env Datei.`;
+        throw new Error(msg);
+      }
+
+      const cloudData = await cloudRes.json();
+      const imageUrl: string = cloudData.secure_url;
 
       // 4. Save URL in our DB
       setUploading((prev) =>
