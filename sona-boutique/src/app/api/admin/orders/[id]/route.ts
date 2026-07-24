@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth";
 import { adminOrderUpdateSchema } from "@/lib/validators/admin";
+import { sendEmail } from "@/lib/email";
+import ShippingUpdateEmail from "@/emails/shipping-update";
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -84,6 +86,24 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
         },
       });
     });
+
+    // Send Shipping Update Email asynchronously if status changed to SHIPPED
+    if (fulfillmentStatus === "SHIPPED" && order.fulfillmentStatus !== "SHIPPED") {
+      try {
+        await sendEmail({
+          to: order.email,
+          subject: `Versandbestätigung ${order.number} — SONA Boutique`,
+          react: ShippingUpdateEmail({
+            customerName: `${order.firstName} ${order.lastName}`,
+            orderNumber: order.number,
+            carrier: carrier || "DHL Express",
+            trackingNo: trackingNo || "JJD000300000000",
+          }),
+        });
+      } catch (emailErr) {
+        console.error("[SHIPPING_EMAIL_FAIL]", emailErr);
+      }
+    }
 
     return NextResponse.json({ order: updatedOrder });
   } catch (error: any) {

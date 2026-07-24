@@ -1,5 +1,6 @@
 import { Resend } from "resend";
 import { ReactElement } from "react";
+import { sendSmtpEmail } from "./email-smtp";
 
 const apiKey = process.env.RESEND_API_KEY;
 const resend = apiKey ? new Resend(apiKey) : null;
@@ -12,21 +13,24 @@ type SendEmailOptions = {
 };
 
 /**
- * Sends an email using Resend with development console fallback.
+ * High-resiliency transactional email sender (Resend Primary + SMTP Fallback + Dev Logger).
  */
 export async function sendEmail({ to, subject, react, text }: SendEmailOptions) {
   const from = process.env.EMAIL_FROM || "SONA Boutique <noreply@sona-boutique.de>";
 
+  // Development Console Logger
   if (!resend || process.env.NODE_ENV === "development") {
-    console.log("==========================================");
-    console.log(`[EMAIL DEV LOG] To: ${to}`);
-    console.log(`[EMAIL DEV LOG] From: ${from}`);
-    console.log(`[EMAIL DEV LOG] Subject: ${subject}`);
-    console.log(`[EMAIL DEV LOG] Text: ${text || "(React Template Rendered)"}`);
-    console.log("==========================================");
+    console.log("=================================================");
+    console.log(`[EMAIL LOG - DEV MODE]`);
+    console.log(`To: ${to}`);
+    console.log(`From: ${from}`);
+    console.log(`Subject: ${subject}`);
+    if (text) console.log(`Text: ${text}`);
+    console.log("=================================================");
     return { id: `dev_mock_${Date.now()}` };
   }
 
+  // Primary: Resend API
   try {
     const { data, error } = await resend.emails.send({
       from,
@@ -37,13 +41,32 @@ export async function sendEmail({ to, subject, react, text }: SendEmailOptions) 
     });
 
     if (error) {
-      console.error("[EMAIL_SEND_ERROR]", error);
-      throw new Error(`Fehler beim E-Mail-Versand: ${error.message}`);
+      throw error;
     }
 
     return data;
-  } catch (err) {
-    console.error("[EMAIL_CLIENT_EXCEPTION]", err);
-    throw err;
+  } catch (resendError: any) {
+    console.error("[RESEND_FAILED_ATTEMPTING_SMTP_FALLBACK]", resendError?.message || resendError);
+
+    // Fallback: Secondary SMTP Transporter with dynamic server markup
+    try {
+      const { renderToStaticMarkup } = await import("react-dom/server");
+      const htmlContent = react ? renderToStaticMarkup(react) : text || "";
+
+      const smtpResult = await sendSmtpEmail({
+        to,
+        subject,
+        html: htmlContent,
+        text,
+      });
+
+      if (smtpResult) {
+        return smtpResult;
+      }
+    } catch (smtpErr) {
+      console.error("[SMTP_FALLBACK_CRITICAL_FAIL]", smtpErr);
+    }
+
+    throw new Error(`E-Mail Versand fehlgeschlagen: ${resendError?.message || "Unbekannter Fehler"}`);
   }
 }

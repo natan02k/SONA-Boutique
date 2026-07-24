@@ -4,6 +4,8 @@ import { generateToken } from "@/lib/auth";
 import { passwordResetRequestSchema } from "@/lib/validators/auth";
 import { hash } from "@node-rs/argon2";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { sendEmail } from "@/lib/email";
+import PasswordResetEmail from "@/emails/password-reset";
 
 export async function POST(request: NextRequest) {
   try {
@@ -52,14 +54,24 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Phase 1: Log token in console (Phase 2: Send email via Resend)
     const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/reset-password?token=${token}`;
-    console.log(`[PASSWORD RESET] Token for ${email}: ${token}`);
-    console.log(`[PASSWORD RESET] Reset URL: ${resetUrl}`);
+
+    // Trigger PasswordResetEmail asynchronously
+    try {
+      await sendEmail({
+        to: email,
+        subject: "Passwort zurücksetzen — SONA Boutique",
+        react: PasswordResetEmail({
+          customerName: `${customer.firstName} ${customer.lastName}`,
+          resetUrl,
+        }),
+      });
+    } catch (emailErr) {
+      console.error("[PASSWORD_RESET_EMAIL_FAIL]", emailErr);
+    }
 
     return Response.json({
       message: "Wenn diese E-Mail-Adresse registriert ist, wurde ein Reset-Link gesendet.",
-      // In Phase 1, we return the token for development convenience
       ...(process.env.NODE_ENV === "development" && { devToken: token }),
     });
   } catch (error) {

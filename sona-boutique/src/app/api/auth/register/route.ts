@@ -3,6 +3,8 @@ import { db } from "@/lib/db";
 import { hashPassword, createSession, setSessionCookie } from "@/lib/auth";
 import { registerSchema } from "@/lib/validators/auth";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { sendEmail } from "@/lib/email";
+import WelcomeEmail from "@/emails/welcome";
 
 export async function POST(request: NextRequest) {
   try {
@@ -60,6 +62,19 @@ export async function POST(request: NextRequest) {
         role: true,
       },
     });
+
+    // Send Welcome Email asynchronously
+    try {
+      await sendEmail({
+        to: email,
+        subject: "Willkommen bei SONA Boutique — Ihr exklusiver Zugang",
+        react: WelcomeEmail({
+          customerName: `${firstName} ${lastName}`,
+        }),
+      });
+    } catch (emailErr) {
+      console.error("[WELCOME_EMAIL_FAIL]", emailErr);
+    }
 
     // Create session and set cookie
     const { token, expiresAt } = await createSession(
