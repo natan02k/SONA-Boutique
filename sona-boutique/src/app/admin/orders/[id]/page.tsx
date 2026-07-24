@@ -125,7 +125,13 @@ export default async function AdminOrderDetailPage({ params }: PageProps) {
         {/* Right: Customer & Action Controls */}
         <div className="space-y-6 lg:col-span-4">
           {/* Interactive Order Actions Component */}
-          <AdminOrderActions orderId={order.id} currentStatus={order.fulfillmentStatus} />
+          <AdminOrderActions
+            orderId={order.id}
+            currentStatus={order.fulfillmentStatus}
+            paymentStatus={order.paymentStatus}
+            orderTotalCents={order.totalCents}
+            partialRefundCents={order.partialRefundCents}
+          />
 
           {/* Customer Info */}
           <div className="space-y-3 border border-[#E8E5DC] bg-white p-6 text-xs">

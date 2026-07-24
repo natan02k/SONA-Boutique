@@ -3,17 +3,28 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { LuxuryButton } from "@/components/luxury/LuxuryButton";
-import { Truck, CheckCircle2, XCircle, AlertTriangle } from "lucide-react";
+import { RefundModal } from "@/components/admin/RefundModal";
+import { Truck, CheckCircle2, XCircle, RotateCcw } from "lucide-react";
 
 type AdminOrderActionsProps = {
   orderId: string;
   currentStatus: string;
+  paymentStatus?: string;
+  orderTotalCents?: number;
+  partialRefundCents?: number;
 };
 
-export function AdminOrderActions({ orderId, currentStatus }: AdminOrderActionsProps) {
+export function AdminOrderActions({
+  orderId,
+  currentStatus,
+  paymentStatus = "PAID",
+  orderTotalCents = 0,
+  partialRefundCents = 0,
+}: AdminOrderActionsProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [showShipModal, setShowShipModal] = useState(false);
+  const [showRefundModal, setShowRefundModal] = useState(false);
   const [carrier, setCarrier] = useState("DHL Express");
   const [trackingNo, setTrackingNo] = useState("");
 
@@ -78,6 +89,18 @@ export function AdminOrderActions({ orderId, currentStatus }: AdminOrderActionsP
           </LuxuryButton>
         )}
 
+        {(paymentStatus === "PAID" || paymentStatus === "PARTIALLY_REFUNDED") && (
+          <LuxuryButton
+            onClick={() => setShowRefundModal(true)}
+            disabled={loading}
+            variant="outline"
+            size="sm"
+            className="w-full"
+          >
+            <RotateCcw className="mr-2 h-4 w-4 text-[#C5A880]" /> Rückerstattung Veranlassen
+          </LuxuryButton>
+        )}
+
         {currentStatus !== "CANCELLED" && (
           <LuxuryButton
             onClick={handleCancelOrder}
@@ -137,6 +160,16 @@ export function AdminOrderActions({ orderId, currentStatus }: AdminOrderActionsP
             </div>
           </div>
         </div>
+      )}
+
+      {/* Refund Modal */}
+      {showRefundModal && (
+        <RefundModal
+          orderId={orderId}
+          orderTotalCents={orderTotalCents}
+          partialRefundCents={partialRefundCents}
+          onClose={() => setShowRefundModal(false)}
+        />
       )}
     </div>
   );

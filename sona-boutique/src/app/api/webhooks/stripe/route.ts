@@ -22,7 +22,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Ungültige Webhook-Signatur" }, { status: 400 });
     }
   } else {
-    // If webhook secret not configured, parse body directly in dev
     try {
       event = JSON.parse(bodyText);
     } catch {
@@ -46,14 +45,12 @@ export async function POST(request: NextRequest) {
           });
 
           if (order && order.paymentStatus !== "PAID") {
-            // Idempotency check: verify if payment already processed for this event/session
             const existingPayment = await db.payment.findFirst({
               where: { providerRef: session.id },
             });
 
             if (!existingPayment) {
               await db.$transaction(async (tx) => {
-                // Update Order Status
                 await tx.order.update({
                   where: { id: orderId },
                   data: {
@@ -62,7 +59,6 @@ export async function POST(request: NextRequest) {
                   },
                 });
 
-                // Record Payment
                 await tx.payment.create({
                   data: {
                     orderId,
@@ -74,7 +70,6 @@ export async function POST(request: NextRequest) {
                 });
               });
 
-              // Send Order Confirmation Email asynchronously
               try {
                 const totalEuro = (order.totalCents / 100).toLocaleString("de-DE", {
                   style: "currency",
@@ -110,13 +105,11 @@ export async function POST(request: NextRequest) {
 
           if (order && order.paymentStatus !== "PAID") {
             await db.$transaction(async (tx) => {
-              // Update status to FAILED
               await tx.order.update({
                 where: { id: orderId },
                 data: { paymentStatus: "FAILED" },
               });
 
-              // Restore inventory quantities
               for (const item of order.items) {
                 if (item.productId) {
                   await tx.product.update({
@@ -133,7 +126,70 @@ export async function POST(request: NextRequest) {
 
       case "charge.dispute.created": {
         const dispute = event.data.object as any;
-        console.warn("[STRIPE_DISPUTE_CREATED]", dispute.id);
+        const paymentIntentId = dispute.payment_intent;
+
+        console.warn(
+          `[STRIPE_DISPUTE_CREATED] Dispute ID: ${dispute.id}, PaymentIntent: ${paymentIntentId}`,
+        );
+
+        // Find payment & order
+        const payment = await db.payment.findFirst({
+          where: { providerRef: paymentIntentId },
+          include: { order: true },
+        });
+
+        if (payment && payment.order) {
+          const order = payment.order;
+          // Idempotent update: set status to CANCELLED to block order processing
+          if (order.fulfillmentStatus !== "CANCELLED") {
+            await db.order.update({
+              where: { id: order.id },
+              data: { fulfillmentStatus: "CANCELLED" },
+            });
+          }
+
+          // Send Support Alert Email
+          try {
+            await sendEmail({
+              to: "support@sona-boutique.de",
+              subject: `[DISPUTE ALERT] Stripe Dispute für Bestellung ${order.number}`,
+              text: `Ein Stripe Dispute wurde eröffnet.\nDispute ID: ${dispute.id}\nBestellung: ${order.number}\nBetrag: ${(dispute.amount / 100).toFixed(2)} €\nGrund: ${dispute.reason}`,
+            });
+          } catch (emailErr) {
+            console.error("[DISPUTE_EMAIL_FAIL]", emailErr);
+          }
+        }
+        break;
+      }
+
+      case "charge.dispute.closed": {
+        const dispute = event.data.object as any;
+        const paymentIntentId = dispute.payment_intent;
+        const disputeStatus = dispute.status; // "won" | "lost"
+
+        console.log(`[STRIPE_DISPUTE_CLOSED] Dispute ID: ${dispute.id}, Status: ${disputeStatus}`);
+
+        const payment = await db.payment.findFirst({
+          where: { providerRef: paymentIntentId },
+          include: { order: true },
+        });
+
+        if (payment && payment.order) {
+          const order = payment.order;
+          if (disputeStatus === "won") {
+            // Restore order status to PENDING
+            await db.order.update({
+              where: { id: order.id },
+              data: { fulfillmentStatus: "PENDING" },
+            });
+          } else if (disputeStatus === "lost") {
+            // Mark payment as REFUNDED
+            await db.order.update({
+              where: { id: order.id },
+              data: { paymentStatus: "REFUNDED" },
+            });
+          }
+        }
         break;
       }
 
