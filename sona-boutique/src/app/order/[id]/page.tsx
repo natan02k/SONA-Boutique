@@ -103,7 +103,6 @@ export default async function OrderConfirmationPage({ params }: PageProps) {
                         />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <span className="label-luxury block text-[8px]">{item.brandName}</span>
                         <h4 className="truncate font-serif text-sm font-medium text-[#1A1A1A]">
                           {item.title}
                         </h4>

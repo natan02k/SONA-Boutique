@@ -81,7 +81,6 @@ export default async function AdminOrderDetailPage({ params }: PageProps) {
               {order.items.map((item) => (
                 <div key={item.id} className="flex items-center justify-between py-3 text-xs">
                   <div>
-                    <span className="label-luxury block text-[8px]">{item.brandName}</span>
                     <h4 className="font-serif text-sm font-medium text-[#1A1A1A]">{item.title}</h4>
                     <span className="font-mono text-[10px] text-[#6B6B6B]">
                       SKU: {item.sku} · Menge: {item.quantity}x

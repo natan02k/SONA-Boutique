@@ -1,33 +1,36 @@
-datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
-}
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
   provider = "prisma-client-js"
 }
 
-model Customer {
-  id              String    @id @default(uuid())
-  email           String    @unique
-  passwordHash    String
-  firstName       String
-  lastName        String
-  phone           String?
-  role            String    @default("CUSTOMER")
-  isVerified      Boolean   @default(false)
-  lastLoginAt     DateTime?
-  stripeCustomerId String?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
 
-  sessions        Session[]
-  addresses       Address[]
-  reviews         Review[]
-  favorites       Favorite[]
-  carts           Cart[]
-  orders          Order[]
+model Customer {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  passwordHash  String
+  firstName     String
+  lastName      String
+  phone         String?
+  role          String    @default("CUSTOMER") // "CUSTOMER" | "ADMIN"
+  isVerified    Boolean   @default(false)
+  lastLoginAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  addresses     Address[]
+  orders        Order[]
+  carts         Cart[]
+  reviews       ProductReview[]
+  sessions      Session[]
+  favorites     Favorite[]
   passwordResetTokens PasswordResetToken[]
+  consignor     Consignor?
 
   @@index([email])
 }
@@ -158,15 +161,15 @@ model Product {
   updatedAt               DateTime  @updatedAt
 
   images                  ProductImage[]
-  reviews                 Review[]
   cartItems               CartItem[]
   orderItems              OrderItem[]
+  reviews                 ProductReview[]
   favorites               Favorite[]
 
+  @@index([slug])
   @@index([brandId])
   @@index([categoryId])
   @@index([status])
-  @@index([isFeatured])
 }
 
 model ProductImage {
@@ -182,7 +185,7 @@ model ProductImage {
   @@index([productId])
 }
 
-model Review {
+model ProductReview {
   id          String   @id @default(uuid())
   productId   String
   product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
@@ -258,17 +261,23 @@ model Order {
   billingCity         String
   billingPostalCode   String
   billingCountry      String
+
   subtotalCents       Int
   shippingCents       Int
   taxCents            Int
   taxRate             Float    @default(0.19)
   discountCents       Int      @default(0)
   totalCents          Int
-  partialRefundCents  Int      @default(0)
   currencyCode        String   @default("EUR")
   promoCode           String?
-  fulfillmentStatus   String   @default("PENDING")
-  paymentStatus       String   @default("PENDING")
+
+  paymentStatus       String   @default("PENDING") // PENDING, PAID, REFUNDED, PARTIALLY_REFUNDED
+  partialRefundCents  Int      @default(0)
+  financialStatus     String   @default("PENDING") // PENDING, PAID, REFUNDED, PARTIALLY_REFUNDED
+  fulfillmentStatus   String   @default("PENDING") // PENDING, PROCESSING, SHIPPED, DELIVERED, CANCELLED
+  paymentMethod       String   @default("STRIPE")
+  paymentIntentId     String?  @unique
+
   placedAt            DateTime @default(now())
   paidAt              DateTime?
   shippedAt           DateTime?
@@ -279,21 +288,22 @@ model Order {
   payments            Payment[]
   shipments           Shipment[]
 
+  @@index([number])
   @@index([customerId])
+  @@index([email])
 }
 
 model OrderItem {
-  id                String   @id @default(uuid())
-  orderId           String
-  order             Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  productId         String?
-  product           Product?  @relation(fields: [productId], references: [id], onDelete: SetNull)
-  title             String
-  brandName         String
-  sku               String
-  quantity          Int
-  unitPriceCents    Int
-  totalCents        Int
+  id             String   @id @default(uuid())
+  orderId        String
+  order          Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId      String?
+  product        Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  title          String
+  sku            String
+  quantity       Int
+  unitPriceCents Int
+  totalCents     Int
 
   @@index([orderId])
 }
@@ -356,4 +366,47 @@ model PromoCode {
 
   @@index([code])
   @@index([isActive])
+}
+
+model Consignor {
+  id            String   @id @default(uuid())
+  customerId    String?  @unique
+  customer      Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  firstName     String
+  lastName      String
+  email         String   @unique
+  phone         String?
+  ibanEncrypted String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  requests      ConsignmentRequest[]
+}
+
+model ConsignmentRequest {
+  id                  String     @id @default(uuid())
+  consignorId         String
+  consignor           Consignor  @relation(fields: [consignorId], references: [id], onDelete: Cascade)
+  brandName           String
+  modelName           String
+  estimatedCondition  String     @default("VERY_GOOD")
+  description         String
+  photos              String     // JSON array string of photo URLs
+  desiredType         String     @default("UNDECIDED") // SALE, CONSIGNMENT, UNDECIDED
+  status              String     @default("SUBMITTED") // SUBMITTED, UNDER_REVIEW, OFFER_MADE, ACCEPTED, REJECTED, ITEM_RECEIVED, LISTED, SOLD
+  offeredType         String?    // SALE or CONSIGNMENT
+  offeredPriceCents   Int?
+  commissionRate      Float?
+  offerExpiresAt      DateTime?
+  offerAcceptedAt     DateTime?
+  offerRejectedAt     DateTime?
+  receivedAt          DateTime?
+  convertedProductId  String?
+  finalPayoutCents    Int?
+  adminNotes          String?
+  createdAt           DateTime   @default(now())
+  updatedAt           DateTime   @updatedAt
+
+  @@index([consignorId])
+  @@index([status])
 }
