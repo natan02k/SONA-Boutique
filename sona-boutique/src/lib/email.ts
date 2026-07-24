@@ -67,6 +67,8 @@ export async function sendEmail({ to, subject, react, text }: SendEmailOptions) 
       console.error("[SMTP_FALLBACK_CRITICAL_FAIL]", smtpErr);
     }
 
-    throw new Error(`E-Mail Versand fehlgeschlagen: ${resendError?.message || "Unbekannter Fehler"}`);
+    throw new Error(
+      `E-Mail Versand fehlgeschlagen: ${resendError?.message || "Unbekannter Fehler"}`,
+    );
   }
 }
