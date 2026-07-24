@@ -10,8 +10,13 @@ import { ConditionBadge } from "@/components/luxury/ConditionBadge";
 import { LuxuryBadge } from "@/components/luxury/LuxuryBadge";
 import { ShimmerImage } from "@/components/luxury/ShimmerImage";
 import { ShieldCheck, Truck, RefreshCw, ArrowRight } from "lucide-react";
+import { useCartStore } from "@/store/cart-store";
+import { useUIStore } from "@/store/ui-store";
 
 export default function HomePage() {
+  const { addItem } = useCartStore();
+  const { openCartDrawer } = useUIStore();
+
   const sampleProducts = [
     {
       id: "1",
@@ -58,43 +63,22 @@ export default function HomePage() {
     },
   ];
 
+  const handleAddToCart = (product: (typeof sampleProducts)[0]) => {
+    addItem({
+      productId: product.id,
+      title: product.title,
+      brandName: product.brand,
+      priceCents: product.priceCents,
+      imageUrl: product.imageUrl,
+      condition: product.condition,
+    });
+    openCartDrawer();
+  };
+
   return (
-    <div className="bg-background text-foreground selection:bg-accent selection:text-primary-foreground min-h-screen">
-      {/* Top Banner Notice */}
-      <div className="border-b border-[#C5A880]/30 bg-[#1A1A1A] px-4 py-2.5 text-center font-mono text-[11px] tracking-widest text-[#FAF9F6] uppercase">
-        ✦ 100% Authentifiziert • Versicherter Expressversand • 14 Tage Rückgaberecht ✦
-      </div>
-
-      {/* Navigation Header */}
-      <header className="border-border sticky top-0 z-40 border-b bg-[#FAF9F6]/90 backdrop-blur-md">
-        <div className="container-luxury flex h-20 items-center justify-between">
-          <div className="flex items-center gap-8">
-            <h1 className="text-primary font-serif text-2xl font-light tracking-[0.2em]">
-              SONA BOUTIQUE
-            </h1>
-            <nav className="text-muted-foreground hidden items-center gap-6 text-xs font-medium tracking-widest uppercase md:flex">
-              <a href="#kollektion" className="hover:text-primary transition-colors">
-                Kollektion
-              </a>
-              <a href="#designer" className="hover:text-primary transition-colors">
-                Designer
-              </a>
-              <a href="#versprechen" className="hover:text-primary transition-colors">
-                Authentizität
-              </a>
-            </nav>
-          </div>
-          <div className="flex items-center gap-4">
-            <LuxuryBadge variant="gold">Phase 1 Dev</LuxuryBadge>
-            <LuxuryButton variant="dark" size="sm">
-              Anmelden
-            </LuxuryButton>
-          </div>
-        </div>
-      </header>
-
+    <div className="bg-background text-foreground min-h-screen">
       {/* Hero Section */}
-      <section className="relative overflow-hidden py-24 lg:py-32">
+      <section className="relative overflow-hidden py-20 lg:py-28">
         <div className="container-luxury grid items-center gap-12 lg:grid-cols-12">
           <div className="space-y-6 lg:col-span-7">
             <RevealOnScroll direction="up" delay={0.1}>
@@ -117,8 +101,13 @@ export default function HomePage() {
             <RevealOnScroll direction="up" delay={0.4}>
               <div className="flex flex-wrap items-center gap-4 pt-4">
                 <MagneticButton>
-                  <LuxuryButton variant="gold" size="lg" shimmer>
-                    Kollektion Entdecken <ArrowRight className="ml-2 h-4 w-4" />
+                  <LuxuryButton
+                    variant="gold"
+                    size="lg"
+                    shimmer
+                    onClick={() => handleAddToCart(sampleProducts[0]!)}
+                  >
+                    In den Warenkorb <ArrowRight className="ml-2 h-4 w-4" />
                   </LuxuryButton>
                 </MagneticButton>
                 <LuxuryButton variant="outline" size="lg">
@@ -158,7 +147,7 @@ export default function HomePage() {
       </div>
 
       {/* Featured Collection Grid */}
-      <section id="kollektion" className="py-20">
+      <section id="kollektion" className="py-16">
         <div className="container-luxury space-y-12">
           <RevealOnScroll direction="up">
             <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
@@ -174,7 +163,7 @@ export default function HomePage() {
             </div>
           </RevealOnScroll>
 
-          <div className="sm:grid-[#1A1A1A] grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
             {sampleProducts.map((product, idx) => (
               <RevealOnScroll key={product.id} delay={idx * 0.1} direction="up">
                 <div className="group bg-card border-border hover:border-accent border p-4 transition-all duration-300 hover:shadow-lg">
@@ -202,8 +191,13 @@ export default function HomePage() {
                     />
 
                     <div className="pt-3">
-                      <LuxuryButton variant="dark" size="sm" className="w-full">
-                        Details Ansehen
+                      <LuxuryButton
+                        variant="dark"
+                        size="sm"
+                        className="w-full"
+                        onClick={() => handleAddToCart(product)}
+                      >
+                        In den Warenkorb
                       </LuxuryButton>
                     </div>
                   </div>
@@ -269,92 +263,6 @@ export default function HomePage() {
           </div>
         </div>
       </section>
-
-      {/* Footer */}
-      <footer className="border-t border-[#C5A880]/30 bg-[#1A1A1A] pt-16 pb-12 text-[#FAF9F6]">
-        <div className="container-luxury space-y-12">
-          <div className="grid gap-8 border-b border-white/10 pb-12 md:grid-cols-4">
-            <div className="space-y-4">
-              <h4 className="font-serif text-xl tracking-widest">SONA BOUTIQUE</h4>
-              <p className="text-xs leading-relaxed text-white/60">
-                Der verlässliche Marktplatz für geprüfte Luxushandtaschen aus zweiter Hand.
-              </p>
-            </div>
-            <div>
-              <h5 className="label-luxury mb-4 text-white/40">Kollektion</h5>
-              <ul className="space-y-2 text-xs text-white/70">
-                <li>
-                  <a href="#" className="hover:text-accent">
-                    Hermès Birkin & Kelly
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-accent">
-                    Chanel Classic Flap
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-accent">
-                    Louis Vuitton Monogram
-                  </a>
-                </li>
-              </ul>
-            </div>
-            <div>
-              <h5 className="label-luxury mb-4 text-white/40">Service</h5>
-              <ul className="space-y-2 text-xs text-white/70">
-                <li>
-                  <a href="#" className="hover:text-accent">
-                    Echtheitszertifikate
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-accent">
-                    Zustandsbewertung
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-accent">
-                    FAQ & Kontakt
-                  </a>
-                </li>
-              </ul>
-            </div>
-            <div>
-              <h5 className="label-luxury mb-4 text-white/40">Rechtliches</h5>
-              <ul className="space-y-2 text-xs text-white/70">
-                <li>
-                  <a href="#" className="hover:text-accent">
-                    Impressum
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-accent">
-                    Datenschutz
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-accent">
-                    AGB & Widerruf
-                  </a>
-                </li>
-              </ul>
-            </div>
-          </div>
-
-          <div className="space-y-4 text-center">
-            <p className="mx-auto max-w-4xl text-[10px] leading-relaxed text-white/40">
-              SONA Boutique ist ein unabhängiger Reseller von gebrauchten Luxusartikeln. Es besteht
-              keine Kooperation, Autorisierung oder offizielle Partnerschaft mit den genannten
-              Marken (Hermès, Chanel, Louis Vuitton, Dior etc.). Alle Markenrechte verbleiben bei
-              den jeweiligen Inhabern.
-            </p>
-            <p className="font-mono text-xs text-white/60">
-              © {new Date().getFullYear()} SONA Boutique. Alle Rechte vorbehalten.
-            </p>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }

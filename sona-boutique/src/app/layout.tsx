@@ -1,6 +1,13 @@
 import type { Metadata } from "next";
 import { Inter, Cormorant_Garamond, JetBrains_Mono } from "next/font/google";
 import { Providers } from "@/providers/providers";
+import { TopNoticeBar } from "@/components/storefront/TopNoticeBar";
+import { Header } from "@/components/storefront/Header";
+import { MobileMenu } from "@/components/storefront/MobileMenu";
+import { CartDrawer } from "@/components/storefront/CartDrawer";
+import { SearchModal } from "@/components/storefront/SearchModal";
+import { Footer } from "@/components/storefront/Footer";
+import { PageTransition } from "@/components/motion/PageTransition";
 import "./globals.css";
 
 const inter = Inter({
@@ -42,8 +49,18 @@ export default function RootLayout({
       className={`${inter.variable} ${cormorant.variable} ${jetbrains.variable}`}
       suppressHydrationWarning
     >
-      <body className="bg-background text-foreground selection:bg-accent selection:text-primary-foreground min-h-screen font-sans antialiased">
-        <Providers>{children}</Providers>
+      <body className="bg-background text-foreground selection:bg-accent selection:text-primary-foreground flex min-h-screen flex-col font-sans antialiased">
+        <Providers>
+          <TopNoticeBar />
+          <Header />
+          <MobileMenu />
+          <CartDrawer />
+          <SearchModal />
+          <main className="flex-1">
+            <PageTransition>{children}</PageTransition>
+          </main>
+          <Footer />
+        </Providers>
       </body>
     </html>
   );
