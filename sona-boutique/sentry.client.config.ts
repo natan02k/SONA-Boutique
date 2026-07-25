@@ -8,6 +8,7 @@ const dsn = process.env.NEXT_PUBLIC_SENTRY_DSN || process.env.SENTRY_DSN;
 if (dsn) {
   Sentry.init({
     dsn,
+    enabled: true, // Force enable even in dev mode for testing
     tracesSampleRate: 0.1, // Performance-Tracing: sample 10% of transactions
     replaysSessionSampleRate: 0.1, // Session Replay: sample 10%
     replaysOnErrorSampleRate: 1.0, // Always capture replay on error
