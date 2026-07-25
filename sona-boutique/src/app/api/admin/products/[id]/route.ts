@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth";
 import { adminProductSchema } from "@/lib/validators/admin";
@@ -65,6 +66,10 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
         images: { orderBy: { position: "asc" } },
       },
     });
+
+    // Revalidate ISR cache for product page and catalog
+    revalidatePath(`/product/${product.slug}`);
+    revalidatePath("/catalog");
 
     return NextResponse.json({ product });
   } catch (error: any) {

@@ -7,7 +7,26 @@ import { ProductGallery } from "@/components/storefront/ProductGallery";
 import { ProductInfo } from "@/components/storefront/ProductInfo";
 import { Reviews } from "@/components/storefront/Reviews";
 
-export const revalidate = 60; // ISR revalidate 60 seconds
+export const revalidate = 60;
+
+export async function generateStaticParams() {
+  const products = await db.product.findMany({
+    where: { status: "PUBLISHED" },
+    select: { slug: true },
+  });
+  return products.map((p) => ({ slug: p.slug }));
+}
+
+function conditionToSchema(condition: string): string {
+  const map: Record<string, string> = {
+    PRISTINE: "https://schema.org/NewCondition",
+    EXCELLENT: "https://schema.org/LikeNewCondition",
+    VERY_GOOD: "https://schema.org/UsedCondition",
+    GOOD: "https://schema.org/UsedCondition",
+    FAIR: "https://schema.org/UsedCondition",
+  };
+  return map[condition] || "https://schema.org/UsedCondition";
+}
 
 type PageProps = {
   params: Promise<{ slug: string }>;
@@ -64,10 +83,63 @@ export default async function ProductDetailPage({ params }: PageProps) {
   const primaryImage =
     product.images[0]?.url || PLACEHOLDER_IMAGE;
 
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: product.title,
+    description: product.description.substring(0, 500),
+    image: product.images.map((img) => img.url),
+    brand: {
+      "@type": "Brand",
+      name: product.brand.name,
+    },
+    sku: product.sku,
+    mpn: product.sku,
+    offers: {
+      "@type": "Offer",
+      price: (product.resalePriceCents / 100).toFixed(2),
+      priceCurrency: product.currencyCode,
+      availability:
+        product.inventoryQuantity > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+      itemCondition: conditionToSchema(product.condition),
+      url: `${process.env.NEXT_PUBLIC_APP_URL || "https://sona-boutique.de"}/product/${slug}`,
+    },
+    ...(product.reviews.length > 0
+      ? {
+          aggregateRating: {
+            "@type": "AggregateRating",
+            ratingValue: (
+              product.reviews.reduce((sum, r) => sum + r.rating, 0) / product.reviews.length
+            ).toFixed(1),
+            reviewCount: product.reviews.length,
+          },
+        }
+      : {}),
+  };
+
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: `${process.env.NEXT_PUBLIC_APP_URL || "https://sona-boutique.de"}/` },
+      { "@type": "ListItem", position: 2, name: product.brand.name, item: `${process.env.NEXT_PUBLIC_APP_URL || "https://sona-boutique.de"}/catalog?brand=${product.brand.slug}` },
+      { "@type": "ListItem", position: 3, name: product.title },
+    ],
+  };
+
   return (
-    <div className="min-h-screen bg-[#FAF9F6] pt-6 pb-24">
-      <div className="container-luxury space-y-8">
-        {/* Breadcrumb Navigation */}
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+      />
+      <div className="min-h-screen bg-[#FAF9F6] pt-6 pb-24">
+        <div className="container-luxury space-y-8">
+          {/* Breadcrumb Navigation */}
         <nav className="flex items-center gap-2 font-mono text-[10px] tracking-widest text-[#6B6B6B] uppercase">
           <Link href="/" className="hover:text-[#1A1A1A]">
             Home
@@ -100,7 +172,8 @@ export default async function ProductDetailPage({ params }: PageProps) {
 
         {/* Reviews Section */}
         <Reviews reviews={product.reviews} />
+        </div>
       </div>
-    </div>
+    </>
   );
 }
