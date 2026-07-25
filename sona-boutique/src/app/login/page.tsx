@@ -5,9 +5,11 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { LuxuryButton } from "@/components/luxury/LuxuryButton";
 import { Lock, Mail, ShieldCheck, ArrowRight } from "lucide-react";
+import { useAuthStore } from "@/store/auth-store";
 
 export default function LoginPage() {
   const router = useRouter();
+  const fetchMe = useAuthStore((s) => s.fetchMe);
   const [email, setEmail] = useState("admin@sona-boutique.de");
   const [password, setPassword] = useState("admin1234");
   const [loading, setLoading] = useState(false);
@@ -29,6 +31,9 @@ export default function LoginPage() {
       if (!res.ok) {
         throw new Error(data.error || "Anmeldung fehlgeschlagen.");
       }
+
+      // Populate Zustand auth store so Header shows correct user icon
+      await fetchMe();
 
       // Check role & redirect accordingly
       if (data.customer?.role === "ADMIN") {

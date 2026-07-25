@@ -30,8 +30,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       publishedAt = new Date();
     }
 
-    // Update images if provided
-    if (data.imageUrls) {
+    // Update images if provided (use !== undefined so empty [] is handled correctly)
+    if (data.imageUrls !== undefined) {
       await db.productImage.deleteMany({ where: { productId: id } });
       if (data.imageUrls.length > 0) {
         await db.productImage.createMany({
@@ -47,10 +47,16 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
     const { imageUrls, ...updateData } = data;
 
+    // Normalize nullable fields: empty string → null to avoid foreign key violations
+    const normalizedData = {
+      ...updateData,
+      categoryId: updateData.categoryId || null,
+    };
+
     const product = await db.product.update({
       where: { id },
       data: {
-        ...updateData,
+        ...normalizedData,
         publishedAt,
       },
       include: {

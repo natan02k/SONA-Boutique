@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { LuxuryButton } from "@/components/luxury/LuxuryButton";
 import {
   UploadCloud,
@@ -41,6 +41,11 @@ export function ImageUploader({ productId, initialImages, onImagesChange }: Imag
   const [uploading, setUploading] = useState<UploadingFile[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Sync internal state when parent re-fetches images (e.g. after edit page load)
+  useEffect(() => {
+    setImages(initialImages);
+  }, [initialImages]);
 
   /* ─────────────────────────────────────────────
    * Fetch Cloudinary signed upload parameters
