@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useUIStore } from "@/store/ui-store";
@@ -12,47 +12,26 @@ import { EASE_LUXURY } from "@/lib/motion-presets";
 
 type SearchResultItem = {
   id: string;
+  slug: string;
   title: string;
-  brand: string;
+  brand: { name: string };
   condition: string;
-  priceCents: number;
-  imageUrl: string;
+  resalePriceCents: number;
+  images: { url: string; altText: string | null }[];
 };
 
-const sampleSearchResults: SearchResultItem[] = [
-  {
-    id: "1",
-    title: "Birkin 30 Gold Togo",
-    brand: "Hermès",
-    condition: "PRISTINE",
-    priceCents: 2250000,
-    imageUrl:
-      "https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=1000&auto=format&fit=crop",
-  },
-  {
-    id: "2",
-    title: "Classic Medium Flap Bag",
-    brand: "Chanel",
-    condition: "EXCELLENT",
-    priceCents: 890000,
-    imageUrl:
-      "https://images.unsplash.com/photo-1548036328-c9fa89d128fa?q=80&w=1000&auto=format&fit=crop",
-  },
-  {
-    id: "3",
-    title: "Speedy Bandoulière 25",
-    brand: "Louis Vuitton",
-    condition: "VERY_GOOD",
-    priceCents: 145000,
-    imageUrl:
-      "https://images.unsplash.com/photo-1590874103328-eac38a683ce7?q=80&w=1000&auto=format&fit=crop",
-  },
+const popularTags = [
+  "Hermès Birkin",
+  "Chanel Classic Flap",
+  "Louis Vuitton Speedy",
+  "Dior Lady",
 ];
 
 export function SearchModal() {
   const { isSearchOpen, closeSearch, openSearch } = useUIStore();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResultItem[]>([]);
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
 
   // Listen for Cmd+K / Ctrl+K keyboard shortcut
@@ -74,24 +53,35 @@ export function SearchModal() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isSearchOpen, closeSearch, openSearch]);
 
-  // Filter search results
+  // Debounced API search
   useEffect(() => {
     if (!query.trim()) {
       setResults([]);
+      setLoading(false);
       return;
     }
 
-    const filtered = sampleSearchResults.filter(
-      (item) =>
-        item.title.toLowerCase().includes(query.toLowerCase()) ||
-        item.brand.toLowerCase().includes(query.toLowerCase()),
-    );
-    setResults(filtered);
+    const timer = setTimeout(async () => {
+      setLoading(true);
+      try {
+        const res = await fetch(
+          `/api/products?search=${encodeURIComponent(query.trim())}&limit=6`,
+        );
+        const data = await res.json();
+        setResults(data.products || []);
+      } catch {
+        setResults([]);
+      } finally {
+        setLoading(false);
+      }
+    }, 250);
+
+    return () => clearTimeout(timer);
   }, [query]);
 
-  const handleSelectResult = (id: string) => {
+  const handleSelectResult = (slug: string) => {
     closeSearch();
-    router.push(`/products/${id}`);
+    router.push(`/catalog?search=${encodeURIComponent(slug)}`);
   };
 
   const handleSearchSubmit = (e: React.FormEvent) => {
@@ -156,12 +146,7 @@ export function SearchModal() {
                       Beliebte Suchanfragen
                     </p>
                     <div className="flex flex-wrap justify-center gap-2 pt-2">
-                      {[
-                        "Hermès Birkin",
-                        "Chanel Classic Flap",
-                        "Louis Vuitton Speedy",
-                        "Dior Lady",
-                      ].map((tag) => (
+                      {popularTags.map((tag) => (
                         <button
                           key={tag}
                           onClick={() => setQuery(tag)}
@@ -171,6 +156,10 @@ export function SearchModal() {
                         </button>
                       ))}
                     </div>
+                  </div>
+                ) : loading ? (
+                  <div className="py-8 text-center text-xs text-[#6B6B6B]">
+                    Suchergebnisse werden geladen…
                   </div>
                 ) : results.length === 0 ? (
                   <div className="py-8 text-center text-xs text-[#6B6B6B]">
@@ -182,21 +171,21 @@ export function SearchModal() {
                     {results.map((item) => (
                       <div
                         key={item.id}
-                        onClick={() => handleSelectResult(item.id)}
+                        onClick={() => router.push(`/product/${item.slug}`)}
                         className="group flex cursor-pointer items-center justify-between border border-[#E8E5DC] bg-white p-3 transition-colors hover:border-[#C5A880]"
                       >
                         <div className="flex items-center gap-4">
                           <div className="relative h-14 w-14 bg-[#F5F4EE]">
                             <ShimmerImage
-                              src={item.imageUrl}
-                              alt={item.title}
+                              src={item.images[0]?.url || ""}
+                              alt={item.images[0]?.altText || item.title}
                               fill
                               sizes="56px"
                               className="object-cover"
                             />
                           </div>
                           <div>
-                            <span className="label-luxury block text-[9px]">{item.brand}</span>
+                            <span className="label-luxury block text-[9px]">{item.brand.name}</span>
                             <h4 className="font-serif text-sm font-medium text-[#1A1A1A]">
                               {item.title}
                             </h4>
@@ -204,7 +193,7 @@ export function SearchModal() {
                           </div>
                         </div>
                         <div className="flex items-center gap-3">
-                          <PriceTag resalePriceCents={item.priceCents} size="sm" />
+                          <PriceTag resalePriceCents={item.resalePriceCents} size="sm" />
                           <ArrowRight className="h-4 w-4 text-[#C5A880] transition-transform group-hover:translate-x-1" />
                         </div>
                       </div>

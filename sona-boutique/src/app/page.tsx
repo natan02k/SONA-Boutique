@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { RevealOnScroll } from "@/components/motion/RevealOnScroll";
 import { MagneticButton } from "@/components/motion/MagneticButton";
 import { KenBurnsImage } from "@/components/motion/KenBurnsImage";
@@ -13,57 +14,37 @@ import { ShieldCheck, Truck, RefreshCw, ArrowRight } from "lucide-react";
 import { useCartStore } from "@/store/cart-store";
 import { useUIStore } from "@/store/ui-store";
 
+type FeaturedProduct = {
+  id: string;
+  slug: string;
+  title: string;
+  brand: { name: string };
+  condition: string;
+  resalePriceCents: number;
+  compareAtPriceCents: number | null;
+  retailPriceCents: number | null;
+  images: { url: string; altText: string | null }[];
+};
+
 export default function HomePage() {
   const { addItem } = useCartStore();
   const { openCartDrawer } = useUIStore();
 
-  const sampleProducts = [
-    {
-      id: "hermes-birkin-30-gold",
-      title: "Birkin 30 Gold Togo",
-      brand: "Hermès",
-      condition: "PRISTINE",
-      priceCents: 2250000,
-      compareAtCents: 2400000,
-      imageUrl:
-        "https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=1000&auto=format&fit=crop",
-      tag: "Must-Have",
-    },
-    {
-      id: "chanel-flap-medium-black",
-      title: "Classic Medium Flap Bag",
-      brand: "Chanel",
-      condition: "EXCELLENT",
-      priceCents: 890000,
-      compareAtCents: 980000,
-      imageUrl:
-        "https://images.unsplash.com/photo-1548036328-c9fa89d128fa?q=80&w=1000&auto=format&fit=crop",
-      tag: "Iconic",
-    },
-    {
-      id: "lv-speedy-25-monogram",
-      title: "Speedy Bandoulière 25",
-      brand: "Louis Vuitton",
-      condition: "VERY_GOOD",
-      priceCents: 145000,
-      retailCents: 175000,
-      imageUrl:
-        "https://images.unsplash.com/photo-1590874103328-eac38a683ce7?q=80&w=1000&auto=format&fit=crop",
-      tag: "Bestseller",
-    },
-    {
-      id: "dior-saddle-blue",
-      title: "Lady Dior Medium Cannage",
-      brand: "Dior",
-      condition: "PRISTINE",
-      priceCents: 495000,
-      imageUrl:
-        "https://images.unsplash.com/photo-1591561954557-26941169b49e?q=80&w=1000&auto=format&fit=crop",
-      tag: "Zertifiziert",
-    },
-  ];
+  const [featuredProducts, setFeaturedProducts] = useState<FeaturedProduct[]>([]);
+  const [heroProduct, setHeroProduct] = useState<FeaturedProduct | null>(null);
 
-  const handleAddToCart = async (product: (typeof sampleProducts)[0]) => {
+  useEffect(() => {
+    fetch("/api/products?sort=featured&limit=4")
+      .then((r) => r.json())
+      .then((data) => {
+        const products: FeaturedProduct[] = data.products || [];
+        setFeaturedProducts(products);
+        if (products.length > 0) setHeroProduct(products[0] ?? null);
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleAddToCart = async (product: FeaturedProduct) => {
     try {
       await addItem(product.id, 1);
       openCartDrawer();
@@ -102,7 +83,8 @@ export default function HomePage() {
                     variant="gold"
                     size="lg"
                     shimmer
-                    onClick={() => handleAddToCart(sampleProducts[0]!)}
+                    disabled={!heroProduct}
+                    onClick={() => heroProduct && handleAddToCart(heroProduct)}
                   >
                     In den Warenkorb <ArrowRight className="ml-2 h-4 w-4" />
                   </LuxuryButton>
@@ -117,22 +99,30 @@ export default function HomePage() {
           <div className="lg:col-span-5">
             <RevealOnScroll direction="left" delay={0.3}>
               <div className="border-border relative aspect-[4/5] border shadow-xl">
-                <KenBurnsImage
-                  src="https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=1000&auto=format&fit=crop"
-                  alt="Hermès Birkin Handbag"
-                  fill
-                  priority
-                />
-                <div className="border-border absolute right-6 bottom-6 left-6 border bg-white/90 p-4 backdrop-blur-md">
-                  <span className="label-luxury mb-1 block">Featured Piece</span>
-                  <div className="flex items-end justify-between">
-                    <div>
-                      <p className="text-primary font-serif text-lg">Hermès Birkin 30</p>
-                      <ConditionBadge condition="PRISTINE" />
+                {heroProduct ? (
+                  <>
+                    <KenBurnsImage
+                      src={heroProduct.images[0]?.url || ""}
+                      alt={heroProduct.title}
+                      fill
+                      priority
+                    />
+                    <div className="border-border absolute right-6 bottom-6 left-6 border bg-white/90 p-4 backdrop-blur-md">
+                      <span className="label-luxury mb-1 block">Featured Piece</span>
+                      <div className="flex items-end justify-between">
+                        <div>
+                          <p className="text-primary font-serif text-lg">{heroProduct.title}</p>
+                          <ConditionBadge condition={heroProduct.condition} />
+                        </div>
+                        <PriceTag resalePriceCents={heroProduct.resalePriceCents} size="md" />
+                      </div>
                     </div>
-                    <PriceTag resalePriceCents={2250000} size="md" />
+                  </>
+                ) : (
+                  <div className="flex h-full items-center justify-center bg-[#F5F4EE]">
+                    <span className="font-mono text-xs text-[#6B6B6B]">Loading…</span>
                   </div>
-                </div>
+                )}
               </div>
             </RevealOnScroll>
           </div>
@@ -161,30 +151,29 @@ export default function HomePage() {
           </RevealOnScroll>
 
           <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
-            {sampleProducts.map((product, idx) => (
+            {featuredProducts.map((product, idx) => (
               <RevealOnScroll key={product.id} delay={idx * 0.1} direction="up">
                 <div className="group bg-card border-border hover:border-accent border p-4 transition-all duration-300 hover:shadow-lg">
                   <div className="relative mb-4 aspect-square overflow-hidden">
                     <ShimmerImage
-                      src={product.imageUrl}
-                      alt={product.title}
+                      src={product.images[0]?.url || ""}
+                      alt={product.images[0]?.altText || product.title}
                       fill
                       sizes="(max-width: 768px) 100vw, 25vw"
                       className="object-cover transition-transform duration-700 group-hover:scale-105"
                     />
                     <div className="absolute top-3 left-3 flex flex-col gap-1.5">
-                      <LuxuryBadge variant="gold">{product.tag}</LuxuryBadge>
                       <ConditionBadge condition={product.condition} />
                     </div>
                   </div>
 
                   <div className="space-y-2">
-                    <p className="label-luxury">{product.brand}</p>
+                    <p className="label-luxury">{product.brand.name}</p>
                     <h4 className="text-primary truncate font-serif text-lg">{product.title}</h4>
                     <PriceTag
-                      resalePriceCents={product.priceCents}
-                      compareAtPriceCents={product.compareAtCents}
-                      retailPriceCents={product.retailCents}
+                      resalePriceCents={product.resalePriceCents}
+                      compareAtPriceCents={product.compareAtPriceCents}
+                      retailPriceCents={product.retailPriceCents}
                     />
 
                     <div className="pt-3">

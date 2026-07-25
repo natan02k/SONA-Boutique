@@ -9,6 +9,7 @@ import { ShimmerImage } from "@/components/luxury/ShimmerImage";
 import { PriceTag } from "@/components/luxury/PriceTag";
 import { LuxuryButton } from "@/components/luxury/LuxuryButton";
 import { getTaxInfo } from "@/lib/tax";
+import { PLACEHOLDER_IMAGE } from "@/lib/placeholder";
 import { ShieldCheck, Truck, Lock, CreditCard, AlertCircle, ArrowLeft, Check } from "lucide-react";
 
 export default function CheckoutPage() {
@@ -397,7 +398,7 @@ export default function CheckoutPage() {
                 {cartItems.map((item) => {
                   const primaryImage =
                     item.product.images[0]?.url ||
-                    "https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=1000&auto=format&fit=crop";
+                    PLACEHOLDER_IMAGE;
 
                   return (
                     <div key={item.id} className="flex items-center justify-between gap-3 pt-3">

@@ -1,14 +1,28 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { useUIStore } from "@/store/ui-store";
 import { X, ArrowRight } from "lucide-react";
 import { EASE_LUXURY } from "@/lib/motion-presets";
 
+type NavLink = { label: string; href: string };
+
 export function MobileMenu() {
   const { isMobileMenuOpen, closeMobileMenu } = useUIStore();
+  const [navLinks, setNavLinks] = useState<NavLink[]>([
+    { label: "Alle Taschen", href: "/catalog" },
+  ]);
+
+  useEffect(() => {
+    fetch("/api/navigation")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.headerLinks) setNavLinks(data.headerLinks);
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -58,38 +72,17 @@ export function MobileMenu() {
 
               {/* Navigation Links */}
               <nav className="flex flex-col space-y-6 text-sm font-medium tracking-widest text-[#1A1A1A] uppercase">
-                <Link
-                  href="/catalog"
-                  onClick={closeMobileMenu}
-                  className="flex items-center justify-between transition-colors hover:text-[#C5A880]"
-                >
-                  <span>Alle Taschen</span>
-                  <ArrowRight className="h-4 w-4 text-[#C5A880]" />
-                </Link>
-                <Link
-                  href="/catalog?collection=investment"
-                  onClick={closeMobileMenu}
-                  className="flex items-center justify-between transition-colors hover:text-[#C5A880]"
-                >
-                  <span>Investment Pieces</span>
-                  <ArrowRight className="h-4 w-4 text-[#C5A880]" />
-                </Link>
-                <Link
-                  href="/catalog?sort=newest"
-                  onClick={closeMobileMenu}
-                  className="flex items-center justify-between transition-colors hover:text-[#C5A880]"
-                >
-                  <span>New Arrivals</span>
-                  <ArrowRight className="h-4 w-4 text-[#C5A880]" />
-                </Link>
-                <Link
-                  href="/catalog?collection=quiet-luxury"
-                  onClick={closeMobileMenu}
-                  className="flex items-center justify-between transition-colors hover:text-[#C5A880]"
-                >
-                  <span>Quiet Luxury</span>
-                  <ArrowRight className="h-4 w-4 text-[#C5A880]" />
-                </Link>
+                {navLinks.map((link) => (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    onClick={closeMobileMenu}
+                    className="flex items-center justify-between transition-colors hover:text-[#C5A880]"
+                  >
+                    <span>{link.label}</span>
+                    <ArrowRight className="h-4 w-4 text-[#C5A880]" />
+                  </Link>
+                ))}
               </nav>
             </div>
 

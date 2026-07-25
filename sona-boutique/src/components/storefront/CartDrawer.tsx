@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useUIStore } from "@/store/ui-store";
 import { useCartStore } from "@/store/cart-store";
 import { ShimmerImage } from "@/components/luxury/ShimmerImage";
+import { PLACEHOLDER_IMAGE } from "@/lib/placeholder";
 import { PriceTag } from "@/components/luxury/PriceTag";
 import { LuxuryButton } from "@/components/luxury/LuxuryButton";
 import { ConditionBadge } from "@/components/luxury/ConditionBadge";
@@ -127,7 +128,7 @@ export function CartDrawer() {
                   {cartItems.map((item) => {
                     const primaryImage =
                       item.product.images[0]?.url ||
-                      "https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=1000&auto=format&fit=crop";
+                      PLACEHOLDER_IMAGE;
 
                     return (
                       <div

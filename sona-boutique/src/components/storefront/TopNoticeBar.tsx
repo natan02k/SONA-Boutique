@@ -3,22 +3,31 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
-const notices = [
-  "✦ Authentifiziert durch zertifizierte Gutachter ✦",
-  "✦ Versicherter DHL Express Versand inklusive ✦",
-  "✦ 14 Tage volles Rückgaberecht ✦",
-];
-
 export function TopNoticeBar() {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [notices, setNotices] = useState<string[]>([
+    "✦ Laden… ✦",
+  ]);
 
   useEffect(() => {
+    fetch("/api/notices")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.notices?.length > 0) setNotices(data.notices);
+      })
+      .catch(() => {
+        // Fallback not needed — default works
+      });
+  }, []);
+
+  useEffect(() => {
+    if (notices.length <= 1) return;
     const timer = setInterval(() => {
       setCurrentIndex((prev) => (prev + 1) % notices.length);
     }, 5000);
 
     return () => clearInterval(timer);
-  }, []);
+  }, [notices.length]);
 
   return (
     <div className="overflow-hidden border-b border-[#C5A880]/30 bg-[#1A1A1A] px-4 py-2.5 text-center text-[#FAF9F6]">

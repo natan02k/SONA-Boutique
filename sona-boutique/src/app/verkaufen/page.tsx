@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { GoldDivider } from "@/components/luxury/GoldDivider";
 import { LuxuryButton } from "@/components/luxury/LuxuryButton";
 import { RevealOnScroll } from "@/components/motion/RevealOnScroll";
@@ -15,11 +15,14 @@ import {
   Trash2,
 } from "lucide-react";
 
+type BrandOption = { name: string; slug: string };
+
 export default function VerkaufenPage() {
   const [submitting, setSubmitting] = useState(false);
   const [submittedId, setSubmittedId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  const [brands, setBrands] = useState<BrandOption[]>([]);
   const [photos, setPhotos] = useState<string[]>([""]);
 
   const [formData, setFormData] = useState({
@@ -33,6 +36,17 @@ export default function VerkaufenPage() {
     desiredType: "UNDECIDED",
     description: "",
   });
+
+  useEffect(() => {
+    fetch("/api/brands")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.brands) {
+          setBrands(data.brands.map((b: { name: string; slug: string }) => ({ name: b.name, slug: b.slug })));
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const handleAddPhotoField = () => {
     if (photos.length < 10) {
@@ -254,12 +268,15 @@ export default function VerkaufenPage() {
                       onChange={(e) => setFormData({ ...formData, brandName: e.target.value })}
                       className="w-full border border-[#E8E5DC] bg-[#FAF9F6] px-3 py-2 text-xs focus:border-[#C5A880] focus:outline-none"
                     >
-                      <option value="Hermès">Hermès</option>
-                      <option value="Chanel">Chanel</option>
-                      <option value="Louis Vuitton">Louis Vuitton</option>
-                      <option value="Bottega Veneta">Bottega Veneta</option>
-                      <option value="Dior">Dior</option>
-                      <option value="Gucci">Gucci</option>
+                      {brands.length > 0 ? (
+                        brands.map((b) => (
+                          <option key={b.slug} value={b.name}>
+                            {b.name}
+                          </option>
+                        ))
+                      ) : (
+                        <option value="">Marken werden geladen…</option>
+                      )}
                       <option value="Andere">Andere Luxusmarke</option>
                     </select>
                   </div>

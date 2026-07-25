@@ -1,7 +1,32 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Lock, Truck, ShieldCheck } from "lucide-react";
 
+type NavLink = { label: string; href: string };
+
 export function Footer() {
+  const [shopLinks, setShopLinks] = useState<NavLink[]>([
+    { label: "Alle Taschen", href: "/catalog" },
+  ]);
+  const [serviceLinks, setServiceLinks] = useState<NavLink[]>([
+    { label: "Versand & Versandkosten", href: "/versandkosten" },
+  ]);
+  const [legalLinks, setLegalLinks] = useState<NavLink[]>([
+    { label: "Impressum", href: "/impressum" },
+  ]);
+
+  useEffect(() => {
+    fetch("/api/navigation")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.footerShop) setShopLinks(data.footerShop);
+        if (data.footerService) setServiceLinks(data.footerService);
+        if (data.footerLegal) setLegalLinks(data.footerLegal);
+      })
+      .catch(() => {});
+  }, []);
   return (
     <footer className="border-t border-[#C5A880]/30 bg-[#1A1A1A] pt-16 pb-12 text-[#FAF9F6]">
       <div className="container-luxury space-y-12">
@@ -29,35 +54,13 @@ export function Footer() {
           <div>
             <h5 className="label-luxury mb-4 text-white/40">Shop</h5>
             <ul className="space-y-2.5 text-xs text-white/70">
-              <li>
-                <Link href="/catalog" className="transition-colors hover:text-[#C5A880]">
-                  Alle Taschen
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/catalog?collection=investment"
-                  className="transition-colors hover:text-[#C5A880]"
-                >
-                  Investment Pieces
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/catalog?sort=newest"
-                  className="transition-colors hover:text-[#C5A880]"
-                >
-                  New Arrivals
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/catalog?collection=quiet-luxury"
-                  className="transition-colors hover:text-[#C5A880]"
-                >
-                  Quiet Luxury
-                </Link>
-              </li>
+              {shopLinks.map((link) => (
+                <li key={link.href}>
+                  <Link href={link.href} className="transition-colors hover:text-[#C5A880]">
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
 
@@ -65,26 +68,13 @@ export function Footer() {
           <div>
             <h5 className="label-luxury mb-4 text-white/40">Service & Hilfe</h5>
             <ul className="space-y-2.5 text-xs text-white/70">
-              <li>
-                <Link href="/authentizitaet" className="transition-colors hover:text-[#C5A880]">
-                  Echtheitsgarantie
-                </Link>
-              </li>
-              <li>
-                <Link href="/zustand" className="transition-colors hover:text-[#C5A880]">
-                  Zustandsbewertung
-                </Link>
-              </li>
-              <li>
-                <Link href="/versandkosten" className="transition-colors hover:text-[#C5A880]">
-                  Versand & Versandkosten
-                </Link>
-              </li>
-              <li>
-                <Link href="/kontakt" className="transition-colors hover:text-[#C5A880]">
-                  Kontakt & Beratung
-                </Link>
-              </li>
+              {serviceLinks.map((link) => (
+                <li key={link.href}>
+                  <Link href={link.href} className="transition-colors hover:text-[#C5A880]">
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
 
@@ -92,26 +82,13 @@ export function Footer() {
           <div>
             <h5 className="label-luxury mb-4 text-white/40">Rechtliches</h5>
             <ul className="space-y-2.5 text-xs text-white/70">
-              <li>
-                <Link href="/impressum" className="transition-colors hover:text-[#C5A880]">
-                  Impressum
-                </Link>
-              </li>
-              <li>
-                <Link href="/datenschutz" className="transition-colors hover:text-[#C5A880]">
-                  Datenschutz
-                </Link>
-              </li>
-              <li>
-                <Link href="/agb" className="transition-colors hover:text-[#C5A880]">
-                  AGB
-                </Link>
-              </li>
-              <li>
-                <Link href="/widerruf" className="transition-colors hover:text-[#C5A880]">
-                  Widerrufsbelehrung
-                </Link>
-              </li>
+              {legalLinks.map((link) => (
+                <li key={link.href}>
+                  <Link href={link.href} className="transition-colors hover:text-[#C5A880]">
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
         </div>

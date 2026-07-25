@@ -10,17 +10,28 @@ import { useAuthStore } from "@/store/auth-store";
 import { Search, ShoppingBag, User, Menu } from "lucide-react";
 import { EASE_LUXURY } from "@/lib/motion-presets";
 
+type NavLink = { label: string; href: string };
+
 export function Header() {
   const { scrollDirection, isAtTop } = useScrollDirection();
   const { toggleCartDrawer, toggleMobileMenu, openSearch } = useUIStore();
   const { cart, fetchCart } = useCartStore();
   const { customer, fetchMe } = useAuthStore();
   const [mounted, setMounted] = useState(false);
+  const [navLinks, setNavLinks] = useState<NavLink[]>([
+    { label: "Alle Taschen", href: "/catalog" },
+  ]);
 
   useEffect(() => {
     setMounted(true);
     fetchMe();
     fetchCart();
+    fetch("/api/navigation")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.headerLinks) setNavLinks(data.headerLinks);
+      })
+      .catch(() => {});
   }, [fetchMe, fetchCart]);
 
   const totalCartCount = mounted
@@ -52,24 +63,15 @@ export function Header() {
           </button>
 
           <nav className="hidden items-center gap-8 text-xs font-medium tracking-widest text-[#6B6B6B] uppercase lg:flex">
-            <Link href="/catalog" className="transition-colors hover:text-[#1A1A1A]">
-              Alle Taschen
-            </Link>
-            <Link
-              href="/catalog?collection=investment"
-              className="transition-colors hover:text-[#1A1A1A]"
-            >
-              Investment
-            </Link>
-            <Link href="/catalog?sort=newest" className="transition-colors hover:text-[#1A1A1A]">
-              New Arrivals
-            </Link>
-            <Link
-              href="/catalog?collection=quiet-luxury"
-              className="transition-colors hover:text-[#1A1A1A]"
-            >
-              Quiet Luxury
-            </Link>
+            {navLinks.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className="transition-colors hover:text-[#1A1A1A]"
+              >
+                {link.label}
+              </Link>
+            ))}
           </nav>
         </div>
 

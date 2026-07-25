@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ShimmerImage } from "@/components/luxury/ShimmerImage";
 import { Maximize2, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { PLACEHOLDER_IMAGE } from "@/lib/placeholder";
 
 type GalleryImage = {
   id: string;
@@ -22,7 +23,7 @@ export function ProductGallery({ images, title }: { images: GalleryImage[]; titl
       : [
           {
             id: "fallback-1",
-            url: "https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=1000&auto=format&fit=crop",
+            url: PLACEHOLDER_IMAGE,
             altText: title,
           },
         ];

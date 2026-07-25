@@ -1,5 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
+import { PLACEHOLDER_IMAGE } from "@/lib/placeholder";
 import { db } from "@/lib/db";
 import { getCurrentCustomer } from "@/lib/auth";
 import { ShimmerImage } from "@/components/luxury/ShimmerImage";
@@ -89,7 +90,7 @@ export default async function OrderConfirmationPage({ params }: PageProps) {
                 {order.items.map((item) => {
                   const primaryImage =
                     item.product?.images[0]?.url ||
-                    "https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=1000&auto=format&fit=crop";
+                    PLACEHOLDER_IMAGE
 
                   return (
                     <div key={item.id} className="flex items-center justify-between gap-4 py-4">

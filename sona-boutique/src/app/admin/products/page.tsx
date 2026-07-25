@@ -6,6 +6,7 @@ import { PriceTag } from "@/components/luxury/PriceTag";
 import { LuxuryBadge } from "@/components/luxury/LuxuryBadge";
 import { LuxuryButton } from "@/components/luxury/LuxuryButton";
 import { ShimmerImage } from "@/components/luxury/ShimmerImage";
+import { PLACEHOLDER_IMAGE } from "@/lib/placeholder";
 import { Plus, Edit, Trash2, Search, Filter, RotateCcw } from "lucide-react";
 
 type Product = {
@@ -197,7 +198,7 @@ export default function AdminProductsPage() {
               {products.map((prod) => {
                 const primaryImage =
                   prod.images[0]?.url ||
-                  "https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=1000&auto=format&fit=crop";
+                  PLACEHOLDER_IMAGE;
 
                 return (
                   <tr key={prod.id} className="transition-colors hover:bg-[#FAF9F6]/80">

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { ShimmerImage } from "@/components/luxury/ShimmerImage";
+import { PLACEHOLDER_IMAGE } from "@/lib/placeholder";
 import { PriceTag } from "@/components/luxury/PriceTag";
 import { ConditionBadge } from "@/components/luxury/ConditionBadge";
 import { LuxuryBadge } from "@/components/luxury/LuxuryBadge";
@@ -34,7 +35,7 @@ export function ProductCard({ product }: ProductCardProps) {
   const rawPrimary =
     product.images && product.images.length > 0
       ? product.images[0]?.url
-      : "https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=1000&auto=format&fit=crop";
+      : PLACEHOLDER_IMAGE;
 
   const rawSecondary =
     product.images && product.images.length > 1 ? product.images[1]?.url : rawPrimary;

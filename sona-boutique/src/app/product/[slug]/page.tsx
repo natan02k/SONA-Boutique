@@ -2,6 +2,7 @@ import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { db } from "@/lib/db";
+import { PLACEHOLDER_IMAGE } from "@/lib/placeholder";
 import { ProductGallery } from "@/components/storefront/ProductGallery";
 import { ProductInfo } from "@/components/storefront/ProductInfo";
 import { Reviews } from "@/components/storefront/Reviews";
@@ -61,8 +62,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
   }
 
   const primaryImage =
-    product.images[0]?.url ||
-    "https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=1000&auto=format&fit=crop";
+    product.images[0]?.url || PLACEHOLDER_IMAGE;
 
   return (
     <div className="min-h-screen bg-[#FAF9F6] pt-6 pb-24">

@@ -19,6 +19,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { QuantityStepper } from "@/components/storefront/QuantityStepper";
+import { PLACEHOLDER_IMAGE } from "@/lib/placeholder";
 
 export default function CartPage() {
   const { cart, fetchCart, updateItem, removeItem, applyPromo, removePromo, error, clearError } =
@@ -120,7 +121,7 @@ export default function CartPage() {
                 {cartItems.map((item) => {
                   const primaryImage =
                     item.product.images[0]?.url ||
-                    "https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=1000&auto=format&fit=crop";
+                    PLACEHOLDER_IMAGE;
 
                   const isSinglePiece = item.product.inventoryQuantity === 1;
 
