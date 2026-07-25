@@ -1,4 +1,5 @@
 import { NextConfig } from "next";
+import { withSentryConfig } from "@sentry/nextjs";
 
 const securityHeaders = [
   { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
@@ -40,4 +41,13 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+const sentryConfig = {
+  // Suppresses source map uploading logs during build
+  silent: !process.env.CI,
+  // Automatically tree-shake Sentry logger statements
+  disableLogger: true,
+  // Upload source maps on deploy
+  widenClientFileUpload: !!process.env.SENTRY_AUTH_TOKEN,
+};
+
+export default withSentryConfig(nextConfig, sentryConfig);
