@@ -13,7 +13,10 @@ type PromoCode = {
   value: number;
   minOrderCents: number;
   usageLimit?: number | null;
+  perCustomerLimit?: number | null;
   usageCount: number;
+  startsAt?: string | null;
+  endsAt?: string | null;
   isActive: boolean;
   createdAt: string;
 };
@@ -30,6 +33,9 @@ export default function AdminPromoCodesPage() {
     value: 10,
     minOrderEuro: 500,
     usageLimit: 100,
+    perCustomerLimit: 1,
+    startsAt: "",
+    endsAt: "",
     isActive: true,
   });
 
@@ -57,11 +63,14 @@ export default function AdminPromoCodesPage() {
     try {
       const payload = {
         code: newCode.code.toUpperCase(),
-        description: newCode.description,
+        description: newCode.description || undefined,
         type: newCode.type,
         value: newCode.type === "PERCENTAGE" ? newCode.value : newCode.value * 100,
         minOrderCents: newCode.minOrderEuro * 100,
         usageLimit: newCode.usageLimit || null,
+        perCustomerLimit: newCode.perCustomerLimit || null,
+        startsAt: newCode.startsAt ? new Date(newCode.startsAt).toISOString() : null,
+        endsAt: newCode.endsAt ? new Date(newCode.endsAt).toISOString() : null,
         isActive: newCode.isActive,
       };
 
@@ -80,6 +89,9 @@ export default function AdminPromoCodesPage() {
           value: 10,
           minOrderEuro: 500,
           usageLimit: 100,
+          perCustomerLimit: 1,
+          startsAt: "",
+          endsAt: "",
           isActive: true,
         });
         loadPromoCodes();
@@ -149,6 +161,7 @@ export default function AdminPromoCodesPage() {
                 <th className="p-4">Typ / Rabatt</th>
                 <th className="p-4">Mindestbestellwert</th>
                 <th className="p-4">Nutzung</th>
+                <th className="p-4">Pro Kunde</th>
                 <th className="p-4">Status</th>
                 <th className="p-4 text-right">Aktionen</th>
               </tr>
@@ -160,6 +173,9 @@ export default function AdminPromoCodesPage() {
                     <div className="flex items-center gap-2">
                       <Tag className="h-4 w-4 text-[#C5A880]" />
                       <span>{promo.code}</span>
+                      {promo.description && (
+                        <span className="font-normal text-[#6B6B6B]">— {promo.description}</span>
+                      )}
                     </div>
                   </td>
                   <td className="p-4 font-mono font-medium">
@@ -174,7 +190,10 @@ export default function AdminPromoCodesPage() {
                     })}
                   </td>
                   <td className="p-4 font-mono text-[#6B6B6B]">
-                    {promo.usageCount} {promo.usageLimit ? `/ ${promo.usageLimit}` : ""}
+                    {promo.usageCount}{promo.usageLimit ? ` / ${promo.usageLimit}` : ""}
+                  </td>
+                  <td className="p-4 font-mono text-[#6B6B6B]">
+                    {promo.perCustomerLimit ?? "—"}
                   </td>
                   <td className="p-4">
                     <button onClick={() => toggleActive(promo.id, promo.isActive)}>
@@ -217,6 +236,18 @@ export default function AdminPromoCodesPage() {
                 value={newCode.code}
                 onChange={(e) => setNewCode({ ...newCode, code: e.target.value.toUpperCase() })}
                 className="w-full border border-[#E8E5DC] bg-[#FAF9F6] px-3 py-2 text-xs text-[#1A1A1A] uppercase focus:border-[#C5A880] focus:outline-none"
+              />
+            </div>
+
+            {/* Description */}
+            <div className="space-y-1">
+              <label className="label-luxury block text-[10px]">Beschreibung</label>
+              <input
+                type="text"
+                placeholder="z.B. Sommeraktion 2026"
+                value={newCode.description}
+                onChange={(e) => setNewCode({ ...newCode, description: e.target.value })}
+                className="w-full border border-[#E8E5DC] bg-[#FAF9F6] px-3 py-2 text-xs text-[#1A1A1A] focus:border-[#C5A880] focus:outline-none"
               />
             </div>
 
@@ -263,12 +294,50 @@ export default function AdminPromoCodesPage() {
               </div>
 
               <div className="space-y-1">
-                <label className="label-luxury block text-[10px]">Max. Nutzungen</label>
+                <label className="label-luxury block text-[10px]">Max. Nutzungen (gesamt)</label>
                 <input
                   type="number"
                   min={1}
                   value={newCode.usageLimit}
                   onChange={(e) => setNewCode({ ...newCode, usageLimit: parseInt(e.target.value) })}
+                  className="w-full border border-[#E8E5DC] bg-[#FAF9F6] px-3 py-2 text-xs text-[#1A1A1A] focus:border-[#C5A880] focus:outline-none"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <label className="label-luxury block text-[10px]">Pro-Kunde-Limit</label>
+                <input
+                  type="number"
+                  min={1}
+                  placeholder="1"
+                  value={newCode.perCustomerLimit}
+                  onChange={(e) =>
+                    setNewCode({ ...newCode, perCustomerLimit: parseInt(e.target.value) || 1 })
+                  }
+                  className="w-full border border-[#E8E5DC] bg-[#FAF9F6] px-3 py-2 text-xs text-[#1A1A1A] focus:border-[#C5A880] focus:outline-none"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="label-luxury block text-[10px]">Gültig ab (optional)</label>
+                <input
+                  type="datetime-local"
+                  value={newCode.startsAt}
+                  onChange={(e) => setNewCode({ ...newCode, startsAt: e.target.value })}
+                  className="w-full border border-[#E8E5DC] bg-[#FAF9F6] px-3 py-2 text-xs text-[#1A1A1A] focus:border-[#C5A880] focus:outline-none"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <label className="label-luxury block text-[10px]">Gültig bis (optional)</label>
+                <input
+                  type="datetime-local"
+                  value={newCode.endsAt}
+                  onChange={(e) => setNewCode({ ...newCode, endsAt: e.target.value })}
                   className="w-full border border-[#E8E5DC] bg-[#FAF9F6] px-3 py-2 text-xs text-[#1A1A1A] focus:border-[#C5A880] focus:outline-none"
                 />
               </div>

@@ -54,6 +54,9 @@ export const adminPromoCodeSchema = z.object({
   value: z.coerce.number().min(1, "Wert ist erforderlich."),
   minOrderCents: z.coerce.number().min(0).default(0),
   usageLimit: z.coerce.number().optional().nullable(),
+  perCustomerLimit: z.coerce.number().optional().nullable(),
+  startsAt: z.string().datetime().optional().nullable(),
+  endsAt: z.string().datetime().optional().nullable(),
   isActive: z.boolean().default(true),
 });
 

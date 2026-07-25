@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getOrCreateCart, recomputeCart } from "@/lib/cart";
+import { validatePromoCode, calculateDiscount } from "@/lib/promo";
 import { applyPromoSchema } from "@/lib/validators/cart";
 
 export async function POST(request: NextRequest) {
@@ -18,45 +19,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Warenkorb nicht gefunden" }, { status: 404 });
     }
 
-    const promo = await db.promoCode.findUnique({ where: { code } });
+    // Use shared validatePromoCode from lib/promo.ts
+    const result = await validatePromoCode(code, cart.subtotalCents, cart.customerId ?? undefined);
 
-    if (!promo || !promo.isActive) {
-      return NextResponse.json(
-        { error: "Ungültiger oder abgelaufener Rabattcode." },
-        { status: 400 },
-      );
+    if (!result.valid) {
+      return NextResponse.json({ error: result.error }, { status: 400 });
     }
 
-    const now = new Date();
-    if (promo.startsAt && promo.startsAt > now) {
-      return NextResponse.json(
-        { error: "Dieser Rabattcode ist noch nicht gültig." },
-        { status: 400 },
-      );
-    }
-    if (promo.endsAt && promo.endsAt < now) {
-      return NextResponse.json(
-        { error: "Dieser Rabattcode ist bereits abgelaufen." },
-        { status: 400 },
-      );
-    }
-    if (promo.usageLimit && promo.usageCount >= promo.usageLimit) {
-      return NextResponse.json(
-        { error: "Dieser Rabattcode wurde bereits aufgebraucht." },
-        { status: 400 },
-      );
-    }
-
-    if (cart.subtotalCents < promo.minOrderCents) {
-      const minEuro = (promo.minOrderCents / 100).toLocaleString("de-DE", {
-        style: "currency",
-        currency: "EUR",
-      });
-      return NextResponse.json(
-        { error: `Mindestbestellwert für diesen Gutschein ist ${minEuro}.` },
-        { status: 400 },
-      );
-    }
+    const promo = result.promo;
 
     // Save promoCode to cart
     await db.cart.update({

@@ -53,6 +53,9 @@ export async function POST(request: NextRequest) {
         value: data.value,
         minOrderCents: data.minOrderCents,
         usageLimit: data.usageLimit,
+        perCustomerLimit: data.perCustomerLimit,
+        startsAt: data.startsAt ? new Date(data.startsAt) : null,
+        endsAt: data.endsAt ? new Date(data.endsAt) : null,
         isActive: data.isActive,
       },
     });
