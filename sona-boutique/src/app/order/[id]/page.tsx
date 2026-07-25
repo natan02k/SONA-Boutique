@@ -7,6 +7,7 @@ import { ShimmerImage } from "@/components/luxury/ShimmerImage";
 import { PriceTag } from "@/components/luxury/PriceTag";
 import { LuxuryButton } from "@/components/luxury/LuxuryButton";
 import { LuxuryBadge } from "@/components/luxury/LuxuryBadge";
+import { getTrackingUrl } from "@/lib/tracking";
 import { ShieldCheck, CheckCircle2, Package, Mail, ArrowRight, Truck } from "lucide-react";
 
 type PageProps = {
@@ -29,6 +30,7 @@ export default async function OrderConfirmationPage({ params }: PageProps) {
         },
       },
       payments: true,
+      shipments: true,
     },
   });
 
@@ -163,13 +165,54 @@ export default async function OrderConfirmationPage({ params }: PageProps) {
               <div className="space-y-3">
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-[#6B6B6B]">Zahlungsstatus:</span>
-                  <LuxuryBadge variant="green">Bezahlt</LuxuryBadge>
+                  <LuxuryBadge variant={order.paymentStatus === "PAID" ? "green" : "red"}>
+                    {order.paymentStatus === "PAID" ? "Bezahlt" : "Ausstehend"}
+                  </LuxuryBadge>
                 </div>
 
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-[#6B6B6B]">Versandstatus:</span>
-                  <LuxuryBadge variant="gold">In Bearbeitung</LuxuryBadge>
+                  <LuxuryBadge
+                    variant={
+                      order.fulfillmentStatus === "DELIVERED"
+                        ? "green"
+                        : order.fulfillmentStatus === "SHIPPED"
+                          ? "gold"
+                          : order.fulfillmentStatus === "CANCELLED"
+                            ? "red"
+                            : "dark"
+                    }
+                  >
+                    {order.fulfillmentStatus === "PENDING" && "In Bearbeitung"}
+                    {order.fulfillmentStatus === "SHIPPED" && "Versendet"}
+                    {order.fulfillmentStatus === "DELIVERED" && "Zugestellt"}
+                    {order.fulfillmentStatus === "CANCELLED" && "Storniert"}
+                  </LuxuryBadge>
                 </div>
+
+                {/* Tracking Links */}
+                {order.shipments?.map((shipment) => (
+                  <div key={shipment.id} className="border-t border-[#E8E5DC] pt-3">
+                    <p className="font-mono text-[10px] text-[#6B6B6B]">
+                      Versendet via {shipment.carrier}
+                    </p>
+                    {shipment.trackingNo && (
+                      <>
+                        <p className="font-mono text-[10px] text-[#6B6B6B]">
+                          Sendungsnr: {shipment.trackingNo}
+                        </p>
+                        <a
+                          href={getTrackingUrl(shipment.carrier, shipment.trackingNo)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="mt-1 inline-flex items-center gap-1 font-mono text-[10px] text-[#C5A880] hover:underline"
+                        >
+                          <Truck className="h-3 w-3" /> Sendung verfolgen →
+                        </a>
+                      </>
+                    )}
+                  </div>
+                )) || null}
 
                 <div className="border-t border-[#E8E5DC] pt-2 font-mono text-[10px] text-[#6B6B6B]">
                   Bestelldatum:{" "}

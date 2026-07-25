@@ -6,6 +6,7 @@ import { PriceTag } from "@/components/luxury/PriceTag";
 import { LuxuryBadge } from "@/components/luxury/LuxuryBadge";
 import { AdminOrderActions } from "@/components/admin/AdminOrderActions";
 import { ArrowLeft, User, MapPin, CreditCard, Truck, ShieldCheck } from "lucide-react";
+import { OrderTimeline } from "@/components/admin/OrderTimeline";
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -162,6 +163,23 @@ export default async function AdminOrderDetailPage({ params }: PageProps) {
               </p>
               <p>{order.shippingCountry}</p>
             </address>
+          </div>
+
+          {/* Order Timeline */}
+          <div className="space-y-3 border border-[#E8E5DC] bg-white p-6 text-xs">
+            <h3 className="border-b border-[#E8E5DC] pb-3 font-serif text-base text-[#1A1A1A]">
+              Bestellverlauf
+            </h3>
+            <OrderTimeline
+              placedAt={order.placedAt}
+              paidAt={order.paidAt}
+              shippedAt={order.shippedAt}
+              deliveredAt={order.deliveredAt}
+              cancelledAt={order.cancelledAt}
+              fulfillmentStatus={order.fulfillmentStatus}
+              paymentStatus={order.paymentStatus}
+              shipments={order.shipments}
+            />
           </div>
         </div>
       </div>

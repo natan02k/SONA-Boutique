@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { LuxuryButton } from "@/components/luxury/LuxuryButton";
 import { RefundModal } from "@/components/admin/RefundModal";
+import { CARRIER_OPTIONS } from "@/lib/tracking";
 import { Truck, CheckCircle2, XCircle, RotateCcw } from "lucide-react";
 
 type AdminOrderActionsProps = {
@@ -122,12 +123,17 @@ export function AdminOrderActions({
 
             <div className="space-y-1">
               <label className="label-luxury block text-[10px]">Versanddienstleister</label>
-              <input
-                type="text"
+              <select
                 value={carrier}
                 onChange={(e) => setCarrier(e.target.value)}
                 className="w-full border border-[#E8E5DC] bg-[#FAF9F6] px-3 py-2 text-xs text-[#1A1A1A] focus:border-[#C5A880] focus:outline-none"
-              />
+              >
+                {CARRIER_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div className="space-y-1">
