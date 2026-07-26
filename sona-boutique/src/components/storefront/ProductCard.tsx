@@ -8,6 +8,7 @@ import { PriceTag } from "@/components/luxury/PriceTag";
 import { ConditionBadge } from "@/components/luxury/ConditionBadge";
 import { LuxuryBadge } from "@/components/luxury/LuxuryBadge";
 import { productThumb } from "@/lib/cloudinary-helpers";
+import { FavoriteButton } from "@/components/storefront/FavoriteButton";
 import { ShoppingBag, ArrowRight } from "lucide-react";
 import { useCartStore } from "@/store/cart-store";
 import { useUIStore } from "@/store/ui-store";
@@ -91,6 +92,11 @@ export function ProductCard({ product }: ProductCardProps) {
               </span>
             )}
             <ConditionBadge condition={product.condition} />
+          </div>
+
+          {/* Favorite Button Top Right */}
+          <div className="absolute top-3 right-3 z-10">
+            <FavoriteButton productId={product.id} />
           </div>
 
           {/* Quick Add Overlay on Hover */}

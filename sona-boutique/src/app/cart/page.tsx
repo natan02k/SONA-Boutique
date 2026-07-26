@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { useCartStore } from "@/store/cart-store";
 import { ShimmerImage } from "@/components/luxury/ShimmerImage";
@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { QuantityStepper } from "@/components/storefront/QuantityStepper";
 import { PLACEHOLDER_IMAGE } from "@/lib/placeholder";
+import { trackClientEvent } from "@/providers/PostHogProvider";
 
 export default function CartPage() {
   const { cart, fetchCart, updateItem, removeItem, applyPromo, removePromo, error, clearError } =
@@ -28,11 +29,25 @@ export default function CartPage() {
   const [promoCodeInput, setPromoCodeInput] = useState("");
   const [promoLoading, setPromoLoading] = useState(false);
   const [promoSuccessMsg, setPromoSuccessMsg] = useState<string | null>(null);
+  const cartTracked = useRef(false);
 
   useEffect(() => {
     setMounted(true);
     fetchCart();
   }, [fetchCart]);
+
+  // Track "Cart Viewed" once when cart loads
+  useEffect(() => {
+    if (!mounted || !cart || cartTracked.current) return;
+    if (cart.items.length === 0) return;
+
+    cartTracked.current = true;
+    trackClientEvent("Cart Viewed", {
+      item_count: cart.items.length,
+      cart_value_cents: cart.subtotalCents,
+      promo_code: cart.promoCode || undefined,
+    });
+  }, [mounted, cart]);
 
   const cartItems = mounted ? cart?.items || [] : [];
   const subtotal = cart?.subtotalCents || 0;

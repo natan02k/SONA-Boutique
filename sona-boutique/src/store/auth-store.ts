@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { useFavoritesStore } from "@/store/favorites-store";
 
 export type Customer = {
   id: string;
@@ -27,6 +28,11 @@ type AuthState = {
   clearError: () => void;
 };
 
+// Lazy import to avoid circular dependency
+function getFavoritesStore() {
+  return useFavoritesStore;
+}
+
 export const useAuthStore = create<AuthState>((set) => ({
   customer: null,
   loading: false,
@@ -42,6 +48,14 @@ export const useAuthStore = create<AuthState>((set) => ({
       }
       const data = await res.json();
       set({ customer: data.customer, loading: false });
+
+      // Pre-fetch favorites when user is logged in
+      if (data.customer) {
+        try {
+          getFavoritesStore().getState().fetch();
+        } catch {}
+      }
+
       return data.customer as Customer;
     } catch {
       set({ customer: null, loading: false, error: "Verbindungsfehler" });
@@ -67,6 +81,14 @@ export const useAuthStore = create<AuthState>((set) => ({
       }
 
       set({ customer: data.customer, loading: false });
+
+      // Pre-fetch favorites after login
+      if (data.customer) {
+        try {
+          getFavoritesStore().getState().fetch();
+        } catch {}
+      }
+
       return data.customer;
     } catch (err) {
       const message = err instanceof Error ? err.message : "Ein Fehler ist aufgetreten";

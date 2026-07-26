@@ -8,7 +8,7 @@ import { PriceTag } from "@/components/luxury/PriceTag";
 import { LuxuryButton } from "@/components/luxury/LuxuryButton";
 import { LuxuryBadge } from "@/components/luxury/LuxuryBadge";
 import { getTrackingUrl } from "@/lib/tracking";
-import { ShieldCheck, CheckCircle2, Package, Mail, ArrowRight, Truck } from "lucide-react";
+import { ShieldCheck, CheckCircle2, Package, Mail, ArrowRight, Truck, FileText } from "lucide-react";
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -257,9 +257,16 @@ export default async function OrderConfirmationPage({ params }: PageProps) {
                   <span>Bestätigung per E-Mail versendet</span>
                 </li>
                 <li className="flex items-center gap-2">
-                  <ShieldCheck className="h-4 w-4 text-[#C5A880]" />
-                  <span>Echtheitszertifikat beigelegt</span>
-                </li>
+  <FileText className="h-4 w-4 text-[#C5A880]" />
+  <a
+    href={`/api/orders/${order.id}/certificate`}
+    target="_blank"
+    rel="noopener noreferrer"
+    className="underline hover:text-[#C5A880] hover:no-underline"
+  >
+    Echtheitszertifikat herunterladen
+  </a>
+</li>
                 <li className="flex items-center gap-2">
                   <Truck className="h-4 w-4 text-[#C5A880]" />
                   <span>Versicherter DHL Express Versand</span>

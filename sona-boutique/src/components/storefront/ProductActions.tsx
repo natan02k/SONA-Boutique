@@ -1,11 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { LuxuryButton } from "@/components/luxury/LuxuryButton";
 import { useCartStore } from "@/store/cart-store";
 import { useUIStore } from "@/store/ui-store";
-import { ShoppingBag, Zap } from "lucide-react";
+import { trackClientEvent } from "@/providers/PostHogProvider";
+import { FavoriteButton } from "@/components/storefront/FavoriteButton";
+import { ShoppingBag, Zap, Heart } from "lucide-react";
 
 type ProductActionsProps = {
   product: {
@@ -27,10 +29,29 @@ export function ProductActions({ product }: ProductActionsProps) {
 
   const isSoldOut = product.inventoryQuantity <= 0;
 
+  // Track "Product Viewed" on mount
+  useEffect(() => {
+    trackClientEvent("Product Viewed", {
+      product_id: product.id,
+      product_title: product.title,
+      brand: product.brandName,
+      price_cents: product.priceCents,
+      condition: product.condition,
+    });
+  }, [product.id, product.title, product.brandName, product.priceCents, product.condition]);
+
   const handleAddToCart = async () => {
     if (isSoldOut) return;
     try {
       await addItem(product.id, quantity);
+      trackClientEvent("Add to Cart", {
+        product_id: product.id,
+        product_title: product.title,
+        brand: product.brandName,
+        price_cents: product.priceCents * quantity,
+        quantity,
+        condition: product.condition,
+      });
       openCartDrawer();
     } catch {
       // Error handled in store
@@ -41,6 +62,14 @@ export function ProductActions({ product }: ProductActionsProps) {
     if (isSoldOut) return;
     try {
       await addItem(product.id, quantity);
+      trackClientEvent("Buy Now", {
+        product_id: product.id,
+        product_title: product.title,
+        brand: product.brandName,
+        price_cents: product.priceCents * quantity,
+        quantity,
+        condition: product.condition,
+      });
       router.push("/checkout");
     } catch {
       // Error handled in store
@@ -84,6 +113,14 @@ export function ProductActions({ product }: ProductActionsProps) {
         </div>
         <span className="font-mono text-[10px] text-[#6B6B6B]">
           (Nur {product.inventoryQuantity}x verfügbar)
+        </span>
+      </div>
+
+      {/* Favorites Button */}
+      <div className="flex items-center justify-center gap-2 border border-[#E8E5DC] bg-white p-3">
+        <FavoriteButton productId={product.id} size="md" />
+        <span className="font-mono text-[10px] text-[#6B6B6B]">
+          Zur Merkliste hinzufügen
         </span>
       </div>
 

@@ -4,9 +4,11 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuthStore } from "@/store/auth-store";
+import { useFavoritesStore } from "@/store/favorites-store";
+import { ProductCard } from "@/components/storefront/ProductCard";
 import { PriceTag } from "@/components/luxury/PriceTag";
 import { LuxuryButton } from "@/components/luxury/LuxuryButton";
-import { User, Package, MapPin, LogOut, ChevronRight, ShoppingBag } from "lucide-react";
+import { User, Package, Heart, MapPin, LogOut, ChevronRight, ShoppingBag } from "lucide-react";
 
 type Order = {
   id: string;
@@ -23,7 +25,7 @@ export default function AccountPage() {
   const router = useRouter();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(true);
-  const [activeTab, setActiveTab] = useState<"overview" | "orders">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "orders" | "watchlist">("overview");
 
   useEffect(() => {
     fetchMe().then((cust) => {
@@ -108,6 +110,16 @@ export default function AccountPage() {
                   {orders.length}
                 </span>
               )}
+            </button>
+            <button
+              onClick={() => setActiveTab("watchlist")}
+              className={`flex w-full items-center gap-3 border px-4 py-3 text-left font-mono text-[11px] uppercase tracking-wider transition-all ${
+                activeTab === "watchlist"
+                  ? "border-[#C5A880] bg-[#C5A880]/10 text-[#1A1A1A]"
+                  : "border-transparent text-[#6B6B6B] hover:border-[#E8E5DC] hover:text-[#1A1A1A]"
+              }`}
+            >
+              <Heart className="h-4 w-4" /> Merkliste
             </button>
 
             <div className="pt-4">
@@ -269,9 +281,96 @@ export default function AccountPage() {
                   ))}
               </div>
             )}
+
+            {/* Watchlist Tab */}
+            {activeTab === "watchlist" && <WatchlistTab />}
           </div>
         </div>
       </div>
     </main>
+  );
+}
+
+function WatchlistTab() {
+  const { favorites, loading, fetch, initialized, toggle } = useFavoritesStore();
+  const { customer } = useAuthStore();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (customer && !initialized) {
+      fetch();
+    }
+  }, [customer, initialized, fetch]);
+
+  if (!mounted) {
+    return (
+      <div className="py-12 text-center font-mono text-xs text-[#6B6B6B]">
+        Wird geladen...
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="py-12 text-center font-mono text-xs text-[#6B6B6B]">
+        Favoriten werden geladen...
+      </div>
+    );
+  }
+
+  if (favorites.length === 0) {
+    return (
+      <div className="flex flex-col items-center gap-4 border border-[#E8E5DC] bg-white py-16 text-center">
+        <Heart className="h-10 w-10 text-[#D4CFC4]" />
+        <div>
+          <p className="font-serif text-lg text-[#1A1A1A]">Ihre Merkliste ist leer</p>
+          <p className="mt-1 font-mono text-xs text-[#6B6B6B]">
+            Markieren Sie Produkte mit dem Herz-Symbol, um sie später wiederzufinden.
+          </p>
+        </div>
+        <Link href="/catalog">
+          <LuxuryButton variant="gold" size="sm">
+            Zum Katalog
+          </LuxuryButton>
+        </Link>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between border-b border-[#E8E5DC] pb-3">
+        <h2 className="font-serif text-lg text-[#1A1A1A]">
+          Meine Favoriten ({favorites.length})
+        </h2>
+        <button
+          onClick={async () => {
+            if (!confirm("Alle Favoriten entfernen?")) return;
+            for (const fav of favorites) {
+              await toggle(fav.id);
+            }
+          }}
+          className="font-mono text-[10px] text-[#6B6B6B] underline hover:text-[#B91C1C]"
+        >
+          Alle entfernen
+        </button>
+      </div>
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+        {favorites.map((product) => (
+          <ProductCard key={product.id} product={product} />
+        ))}
+      </div>
+      <div className="pt-4 text-center">
+        <Link href="/account/favorites">
+          <LuxuryButton variant="outline" size="sm">
+            Volle Merkliste anzeigen
+          </LuxuryButton>
+        </Link>
+      </div>
+    </div>
   );
 }

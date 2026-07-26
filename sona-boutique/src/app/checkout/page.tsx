@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useCartStore } from "@/store/cart-store";
@@ -11,6 +11,7 @@ import { LuxuryButton } from "@/components/luxury/LuxuryButton";
 import { getTaxInfo } from "@/lib/tax";
 import { PLACEHOLDER_IMAGE } from "@/lib/placeholder";
 import { ShieldCheck, Truck, Lock, CreditCard, AlertCircle, ArrowLeft, Check } from "lucide-react";
+import { trackClientEvent } from "@/providers/PostHogProvider";
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -20,6 +21,7 @@ export default function CheckoutPage() {
   const [mounted, setMounted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const checkoutTracked = useRef(false);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -50,6 +52,19 @@ export default function CheckoutPage() {
     fetchCart();
     fetchMe();
   }, [fetchCart, fetchMe]);
+
+  // Track "Checkout Started" once on mount
+  useEffect(() => {
+    if (!mounted || !cart || checkoutTracked.current) return;
+    if (cart.items.length === 0) return;
+
+    checkoutTracked.current = true;
+    trackClientEvent("Checkout Started", {
+      cart_value_cents: cart.subtotalCents,
+      item_count: cart.items.length,
+      promo_code: cart.promoCode || undefined,
+    });
+  }, [mounted, cart]);
 
   // Pre-fill form if customer logged in
   useEffect(() => {
@@ -99,6 +114,17 @@ export default function CheckoutPage() {
       if (!res.ok) {
         throw new Error(data.error || "Fehler beim Erstellen der Bestellung.");
       }
+
+      // Track successful purchase
+      trackClientEvent("Purchase Completed", {
+        order_id: data.order?.id || "unknown",
+        total_cents: total,
+        subtotal_cents: subtotal,
+        discount_cents: discount,
+        shipping_cents: shipping,
+        payment_method: "stripe",
+        country: formData.shippingCountry,
+      });
 
       if (data.checkoutUrl) {
         window.location.href = data.checkoutUrl;
