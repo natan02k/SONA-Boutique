@@ -256,17 +256,26 @@ export default async function OrderConfirmationPage({ params }: PageProps) {
                   <Mail className="h-4 w-4 text-[#C5A880]" />
                   <span>Bestätigung per E-Mail versendet</span>
                 </li>
-                <li className="flex items-center gap-2">
-  <FileText className="h-4 w-4 text-[#C5A880]" />
-  <a
-    href={`/api/orders/${order.id}/certificate`}
-    target="_blank"
-    rel="noopener noreferrer"
-    className="underline hover:text-[#C5A880] hover:no-underline"
-  >
-    Echtheitszertifikat herunterladen
-  </a>
-</li>
+                {/* Product certificate links */}
+                {order.items.filter((item) => item.product?.certificateUrl).length > 0 && (
+                  <li className="flex flex-col gap-2 pt-1">
+                    <span className="label-luxury text-[8px]">Prüfzertifikate</span>
+                    {order.items
+                      .filter((item) => item.product?.certificateUrl)
+                      .map((item) => (
+                        <a
+                          key={item.id}
+                          href={item.product!.certificateUrl!}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-2 text-xs text-[#C5A880] underline hover:no-underline"
+                        >
+                          <FileText className="h-3.5 w-3.5 flex-shrink-0" />
+                          <span className="truncate">{item.title} — Prüfzertifikat</span>
+                        </a>
+                      ))}
+                  </li>
+                )}
                 <li className="flex items-center gap-2">
                   <Truck className="h-4 w-4 text-[#C5A880]" />
                   <span>Versicherter DHL Express Versand</span>

@@ -128,7 +128,6 @@ export async function POST(request: NextRequest) {
             create: recomputedCart.items.map((it) => ({
               productId: it.productId,
               title: it.product.title,
-              brandName: it.product.brand?.name || "SONA Boutique",
               sku: it.product.sku,
               quantity: it.quantity,
               unitPriceCents: it.unitPriceCents,

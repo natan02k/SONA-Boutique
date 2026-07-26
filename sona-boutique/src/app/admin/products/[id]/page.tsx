@@ -45,6 +45,7 @@ export default function AdminEditProductPage({ params }: PageProps) {
     condition: "VERY_GOOD" as "PRISTINE" | "EXCELLENT" | "VERY_GOOD" | "GOOD",
     conditionNotes: "",
     authenticityCertNo: "",
+    certificateUrl: "",
 
     includesOriginalBox: false,
     includesDustBag: false,
@@ -103,6 +104,7 @@ export default function AdminEditProductPage({ params }: PageProps) {
               condition: target.condition || "VERY_GOOD",
               conditionNotes: target.conditionNotes || "",
               authenticityCertNo: target.authenticityCertNo || "",
+              certificateUrl: target.certificateUrl || "",
 
               includesOriginalBox: !!target.includesOriginalBox,
               includesDustBag: !!target.includesDustBag,
@@ -417,6 +419,18 @@ export default function AdminEditProductPage({ params }: PageProps) {
                 onChange={handleChange}
                 className="w-full border border-[#E8E5DC] bg-[#FAF9F6] px-3 py-2 text-xs text-[#1A1A1A] focus:border-[#C5A880] focus:outline-none"
               />
+            </div>
+            <div className="space-y-1 sm:col-span-2">
+              <label className="label-luxury block text-[10px]">Prüfzertifikat (PDF-URL vom Dienstleister)</label>
+              <input
+                type="url"
+                name="certificateUrl"
+                placeholder="https://cdn.dienstleister.de/zertifikate/lx-2026-0001.pdf"
+                value={(formData as any).certificateUrl || ""}
+                onChange={handleChange}
+                className="w-full border border-[#E8E5DC] bg-[#FAF9F6] px-3 py-2 text-xs text-[#1A1A1A] focus:border-[#C5A880] focus:outline-none"
+              />
+              <p className="font-mono text-[9px] text-[#6B6B6B]">Link zum Prüfzertifikat des externen Authentifizierungsdienstleisters</p>
             </div>
           </div>
         </section>

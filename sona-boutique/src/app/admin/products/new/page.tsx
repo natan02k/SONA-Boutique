@@ -40,6 +40,7 @@ export default function AdminNewProductPage() {
     condition: "VERY_GOOD" as "PRISTINE" | "EXCELLENT" | "VERY_GOOD" | "GOOD",
     conditionNotes: "",
     authenticityCertNo: "",
+    certificateUrl: "",
 
     includesOriginalBox: false,
     includesDustBag: false,
@@ -319,6 +320,11 @@ export default function AdminNewProductPage() {
               <div className="space-y-1">
                 <label className="label-luxury block text-[10px]">Zertifikat-Nr.</label>
                 <input type="text" name="authenticityCertNo" placeholder="LX-2026-0001" value={formData.authenticityCertNo} onChange={handleChange} className="w-full border border-[#E8E5DC] bg-[#FAF9F6] px-3 py-2 text-xs text-[#1A1A1A] focus:border-[#C5A880] focus:outline-none" />
+              </div>
+              <div className="space-y-1 sm:col-span-2">
+                <label className="label-luxury block text-[10px]">Prüfzertifikat (PDF-URL vom Dienstleister)</label>
+                <input type="url" name="certificateUrl" placeholder="https://cdn.dienstleister.de/zertifikate/lx-2026-0001.pdf" value={formData.certificateUrl} onChange={handleChange} className="w-full border border-[#E8E5DC] bg-[#FAF9F6] px-3 py-2 text-xs text-[#1A1A1A] focus:border-[#C5A880] focus:outline-none" />
+                <p className="font-mono text-[9px] text-[#6B6B6B]">Link zum Prüfzertifikat des externen Authentifizierungsdienstleisters (z. B. PDF-URL)</p>
               </div>
             </div>
           </section>

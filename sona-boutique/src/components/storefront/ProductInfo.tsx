@@ -16,6 +16,7 @@ type ProductInfoProps = {
     conditionNotes?: string | null;
     isAuthenticityVerified: boolean;
     authenticityCertNo?: string | null;
+    certificateUrl?: string | null;
     includesOriginalBox: boolean;
     includesDustBag: boolean;
     includesReceipt: boolean;
@@ -50,8 +51,21 @@ export function ProductInfo({ product }: ProductInfoProps) {
 
       <div className="flex items-center gap-3">
         <ConditionBadge condition={product.condition} />
-        {product.isAuthenticityVerified && (
-          <LuxuryBadge variant="gold">Echtheit Verifiziert</LuxuryBadge>
+        {product.certificateUrl && (
+          <a
+            href={product.certificateUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 border border-[#C5A880] bg-[#FAF4EB] px-2.5 py-1 text-[9px] font-medium tracking-wider text-[#C5A880] uppercase transition-colors hover:bg-[#C5A880] hover:text-white"
+          >
+            <FileText className="h-3 w-3" />
+            Prüfzertifikat
+          </a>
+        )}
+        {product.authenticityCertNo && (
+          <span className="font-mono text-[9px] text-[#6B6B6B]">
+            Zert.-Nr: {product.authenticityCertNo}
+          </span>
         )}
       </div>
 
@@ -137,21 +151,34 @@ export function ProductInfo({ product }: ProductInfoProps) {
         </div>
       </div>
 
-      {/* Authenticity Certificate Box */}
-      {product.authenticityCertNo && (
+      {/* Prüfzertifikat (externer Dienstleister) */}
+      {(product.certificateUrl || product.authenticityCertNo) && (
         <div className="space-y-2 border border-[#C5A880]/50 bg-[#FAF4EB] p-5">
           <div className="flex items-center gap-2 text-[#C5A880]">
             <ShieldCheck className="h-5 w-5" />
             <h3 className="font-serif text-lg font-medium text-[#1A1A1A]">
-              SONA Echtheitszertifikat
+              Geprüfte Authentizität
             </h3>
           </div>
-          <p className="text-xs leading-relaxed text-[#6B6B6B]">
-            Zertifikats-Nr:{" "}
-            <span className="font-mono font-semibold text-[#1A1A1A]">
-              {product.authenticityCertNo}
-            </span>
-          </p>
+          {product.certificateUrl && (
+            <a
+              href={product.certificateUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-xs font-medium text-[#C5A880] underline hover:no-underline"
+            >
+              <FileText className="h-4 w-4" />
+              Prüfzertifikat externer Dienstleister ansehen
+            </a>
+          )}
+          {product.authenticityCertNo && (
+            <p className="text-xs leading-relaxed text-[#6B6B6B]">
+              Zertifikats-Nr:{" "}
+              <span className="font-mono font-semibold text-[#1A1A1A]">
+                {product.authenticityCertNo}
+              </span>
+            </p>
+          )}
           {product.conditionNotes && (
             <p className="pt-1 text-xs text-[#1A1A1A] italic">
               &quot;{product.conditionNotes}&quot;

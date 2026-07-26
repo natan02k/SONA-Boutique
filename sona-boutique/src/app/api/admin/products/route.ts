@@ -114,6 +114,7 @@ export async function POST(request: NextRequest) {
         condition: data.condition,
         conditionNotes: data.conditionNotes,
         authenticityCertNo: data.authenticityCertNo,
+        certificateUrl: data.certificateUrl || null,
         includesOriginalBox: data.includesOriginalBox,
         includesDustBag: data.includesDustBag,
         includesReceipt: data.includesReceipt,

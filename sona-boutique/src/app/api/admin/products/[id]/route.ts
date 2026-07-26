@@ -48,10 +48,11 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
     const { imageUrls, ...updateData } = data;
 
-    // Normalize nullable fields: empty string → null to avoid foreign key violations
+    // Normalize nullable fields: empty string → null
     const normalizedData = {
       ...updateData,
       categoryId: updateData.categoryId || null,
+      certificateUrl: updateData.certificateUrl || null,
     };
 
     const product = await db.product.update({

@@ -17,6 +17,7 @@ export const adminProductSchema = z.object({
   condition: z.enum(["PRISTINE", "EXCELLENT", "VERY_GOOD", "GOOD"]).default("VERY_GOOD"),
   conditionNotes: z.string().trim().optional(),
   authenticityCertNo: z.string().trim().optional(),
+  certificateUrl: z.string().url("Ungültige URL").optional().or(z.literal("")),
 
   includesOriginalBox: z.boolean().default(false),
   includesDustBag: z.boolean().default(false),
