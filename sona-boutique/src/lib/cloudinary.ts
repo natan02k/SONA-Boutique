@@ -12,11 +12,19 @@ export { cloudinary };
 /**
  * Generates presigned upload parameters for Cloudinary uploads.
  */
-export async function generateUploadSignature(folder: string = "sona-boutique/products") {
+export async function generateUploadSignature(
+  folder: string = "sona-boutique/products",
+  resourceType: "image" | "auto" = "image"
+) {
   const timestamp = Math.round(Date.now() / 1000);
   const apiSecret = process.env.CLOUDINARY_API_SECRET || "demo_secret";
 
-  const signature = cloudinary.utils.api_sign_request({ timestamp, folder }, apiSecret);
+  const params: Record<string, string | number> = { timestamp, folder };
+  if (resourceType === "auto") {
+    params.resource_type = "auto";
+  }
+
+  const signature = cloudinary.utils.api_sign_request(params, apiSecret);
 
   return {
     timestamp,
@@ -24,5 +32,15 @@ export async function generateUploadSignature(folder: string = "sona-boutique/pr
     apiKey: process.env.CLOUDINARY_API_KEY || "demo_key",
     cloudName: process.env.CLOUDINARY_CLOUD_NAME || "demo_cloud",
     folder,
+    resourceType,
   };
+}
+
+/**
+ * Generates presigned upload parameters specifically for PDF/documents.
+ */
+export async function generateDocumentUploadSignature(
+  folder: string = "sona-boutique/certificates"
+) {
+  return generateUploadSignature(folder, "auto");
 }

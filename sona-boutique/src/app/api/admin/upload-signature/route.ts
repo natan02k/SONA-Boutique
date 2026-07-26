@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/auth";
-import { generateUploadSignature } from "@/lib/cloudinary";
+import { generateUploadSignature, generateDocumentUploadSignature } from "@/lib/cloudinary";
 
 export async function GET(request: NextRequest) {
   try {
@@ -8,8 +8,12 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const folder = searchParams.get("folder") || "sona-boutique/products";
+    const type = searchParams.get("type") || "image";
 
-    const signature = await generateUploadSignature(folder);
+    const signature =
+      type === "document"
+        ? await generateDocumentUploadSignature(folder)
+        : await generateUploadSignature(folder);
 
     return NextResponse.json(signature);
   } catch (error) {

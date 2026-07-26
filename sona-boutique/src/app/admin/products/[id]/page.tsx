@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { LuxuryButton } from "@/components/luxury/LuxuryButton";
 import { ImageUploader } from "@/components/admin/ImageUploader";
+import { CertificateUploader } from "@/components/admin/CertificateUploader";
 import { ArrowLeft, Save, CheckCircle2 } from "lucide-react";
 
 type Brand = { id: string; name: string };
@@ -421,16 +422,11 @@ export default function AdminEditProductPage({ params }: PageProps) {
               />
             </div>
             <div className="space-y-1 sm:col-span-2">
-              <label className="label-luxury block text-[10px]">Prüfzertifikat (PDF-URL vom Dienstleister)</label>
-              <input
-                type="url"
-                name="certificateUrl"
-                placeholder="https://cdn.dienstleister.de/zertifikate/lx-2026-0001.pdf"
+              <label className="label-luxury block text-[10px]">Prüfzertifikat</label>
+              <CertificateUploader
                 value={(formData as any).certificateUrl || ""}
-                onChange={handleChange}
-                className="w-full border border-[#E8E5DC] bg-[#FAF9F6] px-3 py-2 text-xs text-[#1A1A1A] focus:border-[#C5A880] focus:outline-none"
+                onChange={(url) => setFormData((prev) => ({ ...prev, certificateUrl: url }))}
               />
-              <p className="font-mono text-[9px] text-[#6B6B6B]">Link zum Prüfzertifikat des externen Authentifizierungsdienstleisters</p>
             </div>
           </div>
         </section>
