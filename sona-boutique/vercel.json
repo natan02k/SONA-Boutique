@@ -1,8 +1,20 @@
 {
+  "framework": "nextjs",
+  "buildCommand": "bun run build",
+  "installCommand": "bun install",
+  "outputDirectory": ".next",
   "crons": [
     {
       "path": "/api/cron/cleanup-locks",
       "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/cleanup-sessions",
+      "schedule": "0 3 * * *"
+    },
+    {
+      "path": "/api/cron/oss-report-reminder",
+      "schedule": "0 8 1 1,4,7,10 *"
     }
   ]
 }
