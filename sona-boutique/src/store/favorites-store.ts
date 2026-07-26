@@ -48,10 +48,10 @@ export const useFavoritesStore = create<FavoritesState>((set, get) => ({
   },
 
   toggle: async (productId: string) => {
-    const { favoriteIds, fetch } = get();
+    const { favoriteIds, favorites } = get();
     const isCurrentlyFav = favoriteIds.has(productId);
 
-    // Optimistic update
+    // Optimistic update – no re-fetch to avoid flicker
     const newIds = new Set(favoriteIds);
     if (isCurrentlyFav) {
       newIds.delete(productId);
@@ -64,6 +64,8 @@ export const useFavoritesStore = create<FavoritesState>((set, get) => ({
       if (isCurrentlyFav) {
         const res = await fetch(`/api/favorites/${productId}`, { method: "DELETE" });
         if (!res.ok) throw new Error("Failed to remove");
+        // Remove from local favorites array
+        set({ favorites: favorites.filter((f) => f.id !== productId) });
       } else {
         const res = await fetch("/api/favorites", {
           method: "POST",
@@ -71,9 +73,9 @@ export const useFavoritesStore = create<FavoritesState>((set, get) => ({
           body: JSON.stringify({ productId }),
         });
         if (!res.ok) throw new Error("Failed to add");
+        // Re-fetch to get the full product data for the new favorite
+        get().fetch();
       }
-      // Re-fetch to sync
-      await fetch();
     } catch {
       // Revert on error
       set({ favoriteIds });
