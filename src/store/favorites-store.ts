@@ -9,7 +9,7 @@ type FavoriteProduct = {
   resalePriceCents: number;
   compareAtPriceCents?: number | null;
   retailPriceCents?: number | null;
-  images: { url: string; altText: string | null }[];
+  images: { id: string; url: string; altText: string | null }[];
 };
 
 type FavoritesState = {
