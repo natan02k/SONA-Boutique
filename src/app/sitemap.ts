@@ -16,30 +16,35 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE_URL}/widerruf`, changeFrequency: "yearly", priority: 0.3 },
   ];
 
-  // Produkte (nur PUBLISHED)
-  const products = await db.product.findMany({
-    where: { status: "PUBLISHED" },
-    select: { slug: true, updatedAt: true },
-    orderBy: { updatedAt: "desc" },
-  });
+  try {
+    // Produkte (nur PUBLISHED)
+    const products = await db.product.findMany({
+      where: { status: "PUBLISHED" },
+      select: { slug: true, updatedAt: true },
+      orderBy: { updatedAt: "desc" },
+    });
 
-  const productPages: MetadataRoute.Sitemap = products.map((p) => ({
-    url: `${BASE_URL}/product/${p.slug}`,
-    lastModified: p.updatedAt,
-    changeFrequency: "weekly" as const,
-    priority: 0.8,
-  }));
+    const productPages: MetadataRoute.Sitemap = products.map((p) => ({
+      url: `${BASE_URL}/product/${p.slug}`,
+      lastModified: p.updatedAt,
+      changeFrequency: "weekly" as const,
+      priority: 0.8,
+    }));
 
-  // Brands
-  const brands = await db.brand.findMany({
-    select: { slug: true },
-  });
+    // Brands
+    const brands = await db.brand.findMany({
+      select: { slug: true },
+    });
 
-  const brandPages: MetadataRoute.Sitemap = brands.map((b) => ({
-    url: `${BASE_URL}/catalog?brand=${b.slug}`,
-    changeFrequency: "weekly" as const,
-    priority: 0.6,
-  }));
+    const brandPages: MetadataRoute.Sitemap = brands.map((b) => ({
+      url: `${BASE_URL}/catalog?brand=${b.slug}`,
+      changeFrequency: "weekly" as const,
+      priority: 0.6,
+    }));
 
-  return [...staticPages, ...productPages, ...brandPages];
+    return [...staticPages, ...productPages, ...brandPages];
+  } catch {
+    console.warn("[sitemap] DB not reachable, returning static pages only");
+    return staticPages;
+  }
 }

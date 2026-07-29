@@ -10,11 +10,16 @@ import { Reviews } from "@/components/storefront/Reviews";
 export const revalidate = 60;
 
 export async function generateStaticParams() {
-  const products = await db.product.findMany({
-    where: { status: "PUBLISHED" },
-    select: { slug: true },
-  });
-  return products.map((p) => ({ slug: p.slug }));
+  try {
+    const products = await db.product.findMany({
+      where: { status: "PUBLISHED" },
+      select: { slug: true },
+    });
+    return products.map((p) => ({ slug: p.slug }));
+  } catch {
+    console.warn("[generateStaticParams] DB not reachable, returning empty");
+    return [];
+  }
 }
 
 function conditionToSchema(condition: string): string {
