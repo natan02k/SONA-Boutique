@@ -18,13 +18,15 @@ export async function GET() {
       database: "connected",
       sentry: sentryConfigured ? "configured" : "missing DSN",
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error("[HEALTH_CHECK_ERROR]", error);
     return NextResponse.json(
       {
         status: "error",
         timestamp: new Date().toISOString(),
         database: "disconnected",
+        error: error?.message || String(error),
+        code: error?.code,
       },
       { status: 503 },
     );
