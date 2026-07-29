@@ -40,7 +40,7 @@ export const useFavoritesStore = create<FavoritesState>((set, get) => ({
       }
       const data = await res.json();
       const faves = (data.favorites || []).map((f: any) => f.product);
-      const ids = new Set((data.favorites || []).map((f: any) => f.productId));
+      const ids = new Set<string>((data.favorites || []).map((f: any) => f.productId));
       set({ favorites: faves, favoriteIds: ids, loading: false, initialized: true });
     } catch {
       set({ favorites: [], favoriteIds: new Set(), loading: false, initialized: true });
